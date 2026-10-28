@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Tack</string>
+    <key>CFBundleDisplayName</key>
+    <string>Tack</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.local.framegrab</string>
+    <key>CFBundleIconFile</key>
+    <string>Tack</string>
+    <key>CFBundleExecutable</key>
+    <string>Tack</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © {{YEAR}} {{COPYRIGHT_HOLDER}}. All rights reserved.</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Tack records your voice only when you turn on microphone audio for a screen recording.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Tack shows your webcam only when you turn on the webcam overlay for a screen recording.</string>
+</dict>
+</plist>
