@@ -2,6 +2,8 @@
 
 A native macOS screenshot and screen recording utility (Swift, SwiftUI, AppKit, ScreenCaptureKit). macOS 14 or newer. No account. Your captures never leave your Mac.
 
+Website: https://itsssdh.github.io/Tack/
+
 ## Install
 
 1. Download `Tack-1.0.0.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
