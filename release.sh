@@ -3,7 +3,7 @@
 #   With an Apple Developer Program membership: signed, notarized and stapled, so it opens without any warning.
 #   Without one (SIGN_IDENTITY="local" in Release.config): signed with your own steady certificate and NOT notarized.
 #     macOS then warns on first launch and they must use System Settings > Privacy & Security > Open Anyway.
-#     The DMG includes a "Read Me First" page that explains it. Put the same steps on your download page.
+#     The DMG window says so. Put the same steps on your download page.
 # Before the first run: fill every REPLACE_ME in Release.config.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -58,25 +58,9 @@ if [ "$NOTARIZE" = 1 ]; then
 fi
 
 DMG="release/${APP_NAME// /-}-$VERSION.dmg"
-STAGE="$(mktemp -d)"
-cp -R "$APP" "$STAGE/"
-ln -s /Applications "$STAGE/Applications"
-if [ "$NOTARIZE" = 0 ]; then
-cat > "$STAGE/Read Me First.txt" <<README
-$APP_NAME: opening it the first time
-
-1. Drag $APP_NAME into the Applications folder.
-2. Open it. macOS will say it could not verify it is free of malware. This is expected: $APP_NAME is
-   made by an independent developer and is not registered with Apple.
-3. Open System Settings > Privacy & Security, scroll down to the message about $APP_NAME,
-   click "Open Anyway", and enter your Mac password.
-4. Open $APP_NAME again and click Open. You only do this once.
-
-If you are unsure, you can read exactly what the app does: it never sends your screenshots anywhere.
-README
-fi
-hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
-rm -rf "$STAGE"
+NOTE=""
+[ "$NOTARIZE" = 0 ] && NOTE="First time opening? If macOS warns, go to System Settings > Privacy & Security > Open Anyway."
+./dmg/make_dmg.sh "$APP" "$DMG" "$APP_NAME" "$NOTE"
 if [ "$NOTARIZE" = 1 ]; then
     codesign --sign "$SIGN_IDENTITY" --timestamp "$DMG"
     echo "Notarizing the disk image..."
@@ -89,7 +73,7 @@ if [ "$NOTARIZE" = 1 ]; then
     spctl -a -t open --context context:primary-signature -v "$DMG"
     spctl -a -t exec -v "$APP"
 else
-    echo "NOTE: this build is not notarized. macOS will warn on first launch; say so on your download page (see the Read Me First page inside the DMG)."
+    echo "NOTE: this build is not notarized. macOS will warn on first launch; say so on your download page."
 fi
 shasum -a 256 "$DMG" | tee "$DMG.sha256"
 echo
