@@ -3,27 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tack – Privacy</title>
+<title>Privacy – Tack</title>
+<meta name="theme-color" content="#fcefdf">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-  :root{--bg:#0b0b0e;--text:#f4f4f6;--muted:#9a9ca6;--accent:#ff8a3a}
-  
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.7}
-  main{max-width:680px;margin:0 auto;padding:48px 20px}
-  a{color:var(--accent)} p,li{color:var(--muted)} h1{margin-top:0}
+  :root{--bg:#fcefdf;--ink:#241f1d;--muted:#a58f82;--chip:rgba(110,70,40,.08);--accent:#ff8a3a;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  header{display:flex;align-items:center;padding:16px clamp(16px,3vw,44px)}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:750;font-size:26px;letter-spacing:-.03em;text-decoration:none}
+  .brand img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px -4px rgba(36,31,29,.5)}
+  main{max-width:720px;margin:0 auto;padding:clamp(30px,6vw,80px) 22px 80px}
+  h1{margin:0 0 18px;font-size:clamp(40px,7vw,72px);letter-spacing:-.045em;font-weight:800;line-height:1}
+  p.lead{font-size:20px;line-height:1.5;font-weight:550;color:#6e5e55;margin:0 0 28px}
+  ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+  li{background:var(--chip);border-radius:20px;padding:18px 22px;font-size:18px;line-height:1.5;font-weight:550;color:#6e5e55}
+  li strong{color:var(--ink);font-weight:750}
+  .back{display:inline-block;margin-top:34px;font-weight:700;color:var(--muted)}
 </style>
 </head>
 <body>
+<header><a class="brand" href="index.html"><img src="icon.png" alt="">Tack</a></header>
 <main>
-  <p><a href="index.html">← Back to Tack</a></p>
   <h1>Privacy</h1>
-  <p>Tack has no accounts, no analytics and does not use the network. Your screenshots and recordings stay on your Mac, in the folder you choose. Here is what it uses:</p>
+  <p class="lead">Tack has no accounts, no analytics and doesn’t use the network. Your screenshots and recordings stay on your Mac, in the folder you choose. Here is what it asks macOS for:</p>
   <ul>
     <li><strong>Screen Recording:</strong> needed to take screenshots and recordings.</li>
-    <li><strong>Camera:</strong> used only when you turn on the webcam overlay for a screen recording.</li>
+    <li><strong>Camera:</strong> used only when you turn on the webcam bubble for a screen recording.</li>
     <li><strong>Microphone:</strong> used only when you turn on microphone audio for a screen recording.</li>
   </ul>
-  <p>Questions? Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p>
+  <p class="lead" style="margin-top:28px">Questions? Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p>
+  <a class="back" href="index.html">← Back to Tack</a>
 </main>
 </body>
 </html>

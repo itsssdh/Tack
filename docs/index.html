@@ -3,260 +3,483 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tack – Native screenshots and screen recording for Mac</title>
-<meta name="description" content="Tack is a free, open source native macOS menu bar app for screenshots and screen recording, with an annotation editor, OCR, pinned screenshots and optional webcam and microphone. Not Electron.">
-<meta property="og:title" content="Tack – Native screenshots and screen recording for Mac">
-<meta property="og:description" content="Free, open source screenshots and screen recording for Mac. Light, fast, and built for Mac.">
+<title>Tack – Screenshots and screen recording for Mac</title>
+<meta name="description" content="Tack is a free, open source menu bar app for screenshots and screen recording on Mac. Annotate, pin, copy text from the screen and record, all native and private.">
+<meta property="og:title" content="Tack – Screenshots and screen recording for Mac">
+<meta property="og:description" content="Free, open source, native. Capture, mark up and record on your Mac.">
 <meta property="og:image" content="icon.png">
-<meta name="theme-color" content="#0b0b0e">
+<meta name="theme-color" content="#fcefdf">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
   :root{
-    --bg:#0b0b0e; --bg2:#131318; --text:#f5f5f7; --muted:#9a9ca6;
-    --accent:#ff8a3a; --accent2:#ffb26b; --border:rgba(255,255,255,.08);
+    --bg:#fcefdf; --ink:#241f1d; --muted:#a58f82; --chip:rgba(110,70,40,.08); --chip2:rgba(110,70,40,.13);
+    --accent:#ff8a3a; --mark:#ffcdac; --blue:#5b6cff;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:inherit}
-  .wrap{max-width:1040px;margin:0 auto;padding:0 22px;position:relative}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+  svg{display:block}
 
-  /* glow */
-  .glow{position:absolute;top:-180px;left:50%;transform:translateX(-50%);width:900px;height:620px;
-    background:radial-gradient(closest-side,rgba(255,138,58,.28),rgba(255,138,58,0));pointer-events:none;z-index:0}
+  /* ---------- nav ---------- */
+  .nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+    padding:16px clamp(16px,3vw,44px);background:rgba(252,239,223,.72);
+    -webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5)}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:750;font-size:26px;letter-spacing:-.03em}
+  .brand img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px -4px rgba(36,31,29,.5)}
+  .ver{font-size:13px;font-weight:650;color:var(--muted);border:1.5px solid var(--chip2);border-radius:9px;padding:2px 8px;margin-top:-14px}
+  .nav-r{display:flex;align-items:center;gap:clamp(14px,2.4vw,36px);font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .nav-r a.lnk{display:flex;align-items:center;gap:10px}
+  .nav-r svg.i{width:24px;height:24px}
+  .pillbtn{display:flex;align-items:center;gap:10px;background:var(--chip);padding:14px 22px;border-radius:18px;transition:background .2s}
+  .pillbtn:hover{background:var(--chip2)}
+  .pillbtn svg{width:22px;height:22px}
+  @media(max-width:760px){.nav-r a.lnk{display:none}.pillbtn{padding:11px 16px;font-size:16px}.brand{font-size:22px}}
 
-  nav{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:22px 0}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;text-decoration:none;letter-spacing:-.01em}
-  .brand img{width:28px;height:28px}
-  nav .right{display:flex;align-items:center;gap:22px}
-  nav .right a{color:var(--muted);text-decoration:none;font-size:.93rem}
-  nav .right a:hover{color:var(--text)}
-  nav .right a.pill{color:var(--text);border:1px solid var(--border);padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.04)}
+  /* ---------- hero ---------- */
+  .hero{text-align:center;padding:clamp(44px,6.5vw,92px) 20px 0}
+  h1{margin:0;font-size:clamp(40px,6.9vw,112px);line-height:.98;font-weight:800;letter-spacing:-.048em}
+  .hl{background:linear-gradient(transparent 50%,var(--mark) 50%,var(--mark) 93%,transparent 93%);padding:0 .08em;border-radius:6px;white-space:nowrap}
+  .cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:clamp(30px,4vw,54px)}
+  .btn{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,2vw,24px);font-weight:700;letter-spacing:-.015em;
+    padding:clamp(16px,1.8vw,22px) clamp(22px,2.4vw,32px);border-radius:22px;transition:transform .2s,box-shadow .2s,background .2s}
+  .btn svg{width:26px;height:26px}
+  .btn.dark{background:var(--ink);color:#fff;box-shadow:0 22px 34px -14px rgba(36,31,29,.55)}
+  .btn.dark:hover{transform:translateY(-2px);box-shadow:0 28px 40px -14px rgba(36,31,29,.6)}
+  .btn.soft{background:var(--chip)}
+  .btn.soft:hover{background:var(--chip2)}
+  .badge{background:var(--ink);color:#fff;border-radius:10px;padding:3px 11px;font-size:.78em}
 
-  .hero{position:relative;z-index:1;text-align:center;padding:56px 0 40px}
-  .badge{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:var(--accent2);
-    border:1px solid rgba(255,138,58,.35);background:rgba(255,138,58,.08);padding:6px 14px;border-radius:999px}
-  .badge svg{width:14px;height:14px}
-  h1{font-size:clamp(2.6rem,8vw,5.2rem);line-height:1.02;letter-spacing:-.035em;margin:26px 0 18px;font-weight:800}
-  h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--muted);max-width:620px;margin:0 auto 34px}
-  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:700;font-size:1.02rem;
-    padding:14px 28px;border-radius:14px;transition:transform .15s, box-shadow .15s}
-  .btn.primary{background:linear-gradient(180deg,#ff9a50,#ff7a22);color:#1a0d02;box-shadow:0 10px 30px rgba(255,138,58,.35)}
-  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(255,138,58,.45)}
-  .btn.ghost{border:1px solid var(--border);background:rgba(255,255,255,.04)}
-  .btn.ghost:hover{background:rgba(255,255,255,.08)}
-  .meta{color:var(--muted);font-size:.88rem;margin-top:16px}
+  /* ---------- interactive demo ---------- */
+  .demo{padding:clamp(34px,5vw,70px) clamp(14px,3vw,40px) 0}
+  .stage{position:relative;width:min(1180px,100%);margin:0 auto;aspect-ratio:16/10;border-radius:clamp(22px,3vw,38px);overflow:hidden;
+    box-shadow:0 50px 90px -34px rgba(70,30,100,.55);user-select:none;-webkit-user-select:none;touch-action:none;isolation:isolate;container-type:size}
+  .scene{position:absolute;inset:0;container-type:size;overflow:hidden;
+    background:
+      radial-gradient(70% 60% at 12% 0%,#7a5cff 0,transparent 60%),
+      radial-gradient(60% 60% at 100% 18%,#ff7d8e 0,transparent 62%),
+      radial-gradient(80% 70% at 62% 112%,#ffb25e 0,transparent 62%),
+      linear-gradient(160deg,#27277a,#58297b 55%,#8d3b6a)}
+  .scene::before,.scene::after{content:"";position:absolute;z-index:0;border-radius:50%;opacity:.55}
+  .scene::before{width:90cqw;height:90cqw;left:-30cqw;bottom:-62cqw;background:linear-gradient(140deg,#3a2f9a,#6a2f8a)}
+  .scene::after{width:80cqw;height:80cqw;right:-22cqw;bottom:-56cqw;background:linear-gradient(200deg,#d95f86,#7a3a8a)}
+  .win{position:absolute;z-index:1;background:rgba(255,255,255,.95);border-radius:1.4cqw;box-shadow:0 2.4cqw 5cqw -1cqw rgba(20,10,50,.55);overflow:hidden;color:#2a2530;font-size:1.25cqw}
+  .win .bar{height:3.1cqw;display:flex;align-items:center;gap:.6cqw;padding:0 1.2cqw;background:rgba(0,0,0,.04)}
+  .win .bar i{width:1cqw;height:1cqw;border-radius:50%;background:#ff5f57}
+  .win .bar i:nth-child(2){background:#febc2e}.win .bar i:nth-child(3){background:#28c840}
+  .win .bar b{margin-left:1cqw;font-size:1.2cqw;font-weight:650;color:#6c6470}
+  .win .body{padding:1.8cqw 2cqw}
+  .winA{left:7%;top:17%;width:47%;height:62%}
+  .winA h4{margin:0 0 .5cqw;font-size:2.5cqw;letter-spacing:-.02em}
+  .winA p{margin:0 0 1.6cqw;color:#8b8394;font-size:1.3cqw}
+  .chart{display:flex;align-items:flex-end;gap:1.3cqw;height:14cqw;padding:1.4cqw 1.6cqw 0;background:linear-gradient(#f6f2fb,#efe8fa);border-radius:1cqw}
+  .chart span{flex:1;border-radius:.7cqw .7cqw 0 0;background:linear-gradient(#ff9a52,#ff7a1f)}
+  .chart span:nth-child(even){background:linear-gradient(#8a7bff,#5b6cff)}
+  .lines{margin-top:1.8cqw;display:grid;gap:.9cqw}
+  .lines i{display:block;height:1cqw;border-radius:1cqw;background:#e9e4ee}
+  .winB{left:52%;top:30%;width:39%;height:48%}
+  .winB .amount{font-size:4.6cqw;font-weight:800;letter-spacing:-.04em;margin:.6cqw 0 .2cqw}
+  .winB .row{display:flex;justify-content:space-between;padding:.9cqw 0;border-bottom:1px solid #eee9f2;font-size:1.35cqw}
+  .winB .row span:last-child{color:#8b8394}
+  .qr{width:7cqw;height:7cqw;margin-top:1.4cqw;background:
+    conic-gradient(#2a2530 25%,#fff 0 50%,#2a2530 0 75%,#fff 0) 0 0/1.75cqw 1.75cqw;border:.8cqw solid #fff;outline:1px solid #e3dde9;border-radius:.4cqw}
 
-  /* mock desktop */
-  .stage{position:relative;z-index:1;margin:30px auto 90px;border-radius:22px;border:1px solid var(--border);
-    background:linear-gradient(135deg,#1c1d26 0%,#14141b 45%,#241912 100%);overflow:hidden;
-    box-shadow:0 40px 90px rgba(0,0,0,.6);aspect-ratio:16/9;min-height:300px}
-  .menubar{display:flex;justify-content:space-between;align-items:center;height:30px;padding:0 16px;
-    background:rgba(255,255,255,.07);backdrop-filter:blur(14px);font-size:.78rem;color:#e8e8ee}
-  .menubar .l,.menubar .r{display:flex;gap:16px;align-items:center}
-  .menubar .tack{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);padding:2px 8px;border-radius:6px}
-  .rec{width:8px;height:8px;border-radius:50%;background:#ff4b3a;animation:pulse 1.4s infinite}
-  @keyframes pulse{50%{opacity:.35}}
-  .popover{position:absolute;top:38px;right:5%;width:min(260px,55%);padding:16px;border-radius:16px;
-    background:rgba(30,30,38,.82);backdrop-filter:blur(24px);border:1px solid var(--border);
-    box-shadow:0 20px 50px rgba(0,0,0,.5);font-size:.85rem}
-  .popover h4{margin:0 0 12px;font-size:.9rem;display:flex;align-items:center;gap:8px}
-  .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border);color:#cfd0d8}
-  .toggle{width:34px;height:20px;border-radius:999px;background:#3a3b45;position:relative}
-  .toggle.on{background:var(--accent)}
-  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
-  .toggle.on::after{left:16px}
-  .startbtn{margin-top:12px;background:var(--accent);color:#1a0d02;font-weight:700;text-align:center;padding:9px;border-radius:10px}
-  .cam{position:absolute;left:5%;bottom:8%;width:clamp(80px,14%,140px);aspect-ratio:1;border-radius:50%;
-    border:3px solid var(--accent);background:radial-gradient(circle at 50% 38%,#d9b08c 0 22%,transparent 23%),
-    radial-gradient(ellipse at 50% 100%,#4a5568 0 45%,transparent 46%),#2a2d38;
-    box-shadow:0 14px 34px rgba(0,0,0,.5)}
-  .corner{position:absolute;width:26px;height:26px;border:3px solid rgba(255,255,255,.75)}
-  .corner.tl{top:21%;left:30%;border-right:0;border-bottom:0;border-top-left-radius:8px}
-  .corner.br{bottom:14%;right:36%;border-left:0;border-top:0;border-bottom-right-radius:8px}
-  @media (max-width:640px){ .popover{width:62%;right:4%} .corner{display:none} }
+  .menubar{position:absolute;left:0;right:0;top:0;height:clamp(26px,3.3cqw,36px);display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:5;
+    background:rgba(24,16,48,.32);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#fff;font-size:clamp(11px,1.15vw,14px);font-weight:600}
+  .menubar .l,.menubar .r{display:flex;align-items:center;gap:clamp(10px,1.4vw,18px)}
+  .menubar .l b{font-weight:800}
+  .menubar svg{width:16px;height:16px}
+  .tbtn{display:flex;align-items:center;gap:6px;padding:3px 7px;margin:-3px -4px;border-radius:7px;transition:background .15s}
+  .tbtn:hover,.tbtn[aria-expanded="true"]{background:rgba(255,255,255,.22)}
+  .tbtn svg{width:17px;height:17px}
+  .trec{display:none;align-items:center;gap:6px;color:#fff;font-variant-numeric:tabular-nums}
+  .trec::before{content:"";width:9px;height:9px;border-radius:50%;background:#ff453a;animation:pulse 1.1s infinite}
+  .recording .trec{display:flex}.recording .ticon{display:none}
+  @keyframes pulse{50%{opacity:.3}}
+  #clock{font-variant-numeric:tabular-nums;white-space:nowrap}
+  @media(max-width:700px){.menubar .l span{display:none}}
 
-  /* native strip */
-  .native{position:relative;z-index:1;text-align:center;padding:10px 0 80px}
-  .native h2,.section h2{font-size:clamp(1.9rem,5vw,3rem);letter-spacing:-.03em;line-height:1.1;margin:0 0 14px}
-  .native p.lead,.section p.lead{color:var(--muted);max-width:620px;margin:0 auto 38px;font-size:1.1rem}
-  .vs{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px;margin:0 auto;text-align:left}
-  .vs .box{border:1px solid var(--border);border-radius:18px;padding:24px;background:var(--bg2)}
-  .vs .box.good{border-color:rgba(255,138,58,.45);background:linear-gradient(180deg,rgba(255,138,58,.10),rgba(255,138,58,.02))}
-  .vs h3{margin:0 0 12px;font-size:1.05rem}
-  .vs ul{margin:0;padding:0;list-style:none}
-  .vs li{padding:6px 0 6px 26px;position:relative;color:var(--muted);font-size:.95rem}
-  .vs li::before{position:absolute;left:0;font-weight:700}
-  .good li::before{content:"✓";color:var(--accent)}
-  .bad li::before{content:"✕";color:#6b6d78}
-  @media (max-width:640px){.vs{grid-template-columns:1fr} nav .right a:not(.pill){display:none} nav .right a.pill{white-space:nowrap}}
+  .tmenu{position:absolute;right:10px;top:calc(clamp(26px,3.3cqw,36px) + 4px);z-index:20;min-width:230px;padding:6px;border-radius:13px;
+    background:rgba(34,28,58,.86);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);
+    color:#fff;font-size:14px;font-weight:550;box-shadow:0 20px 50px -10px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);display:none}
+  .tmenu.open{display:block}
+  .tmenu button{display:flex;width:100%;justify-content:space-between;gap:24px;padding:7px 10px;border-radius:7px;text-align:left}
+  .tmenu button:hover{background:#3b7bff}
+  .tmenu button em{font-style:normal;opacity:.55}
+  .tmenu hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:5px 4px}
 
-  /* features */
-  .section{position:relative;z-index:1;padding:0 0 90px;text-align:center}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;text-align:left}
-  .card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:26px;transition:border-color .2s, transform .2s}
-  .card:hover{border-color:rgba(255,138,58,.4);transform:translateY(-3px)}
-  .ico{width:40px;height:40px;border-radius:12px;background:rgba(255,138,58,.12);color:var(--accent);
-    display:grid;place-items:center;margin-bottom:16px}
-  .ico svg{width:20px;height:20px}
-  .card h3{margin:0 0 6px;font-size:1.08rem}
-  .card p{margin:0;color:var(--muted);font-size:.95rem}
+  .sel{position:absolute;inset:0;z-index:10;display:none;cursor:crosshair;touch-action:none}
+  .sel.on{display:block}
+  .sel .dim{position:absolute;inset:0;background:rgba(12,8,34,.38)}
+  .sel .box{position:absolute;border:2px solid #fff;border-radius:2px;box-shadow:0 0 0 9999px rgba(12,8,34,.42);display:none}
+  .sel .size{position:absolute;left:0;top:100%;margin-top:8px;padding:3px 9px;border-radius:8px;background:rgba(20,14,42,.85);color:#fff;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .sel .hint{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 16px);transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:rgba(20,14,42,.85);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none}
+  .winhl{position:absolute;border:3px solid #3b7bff;background:rgba(59,123,255,.18);border-radius:1.4cqw;display:none;pointer-events:none}
+  .sel[data-mode="window"] .dim{background:rgba(12,8,34,.18)}
 
-  /* faq */
-  .faq{max-width:700px;margin:0 auto;text-align:left}
-  details{border-bottom:1px solid var(--border);padding:18px 0}
-  summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30}
+  .flash.go{animation:flash .45s ease-out}
+  @keyframes flash{0%{opacity:.85}100%{opacity:0}}
+
+  .recbar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:12;display:none;align-items:center;gap:14px;padding:9px 10px 9px 18px;border-radius:999px;
+    background:rgba(24,18,46,.82);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-weight:650;font-size:14px;box-shadow:0 14px 34px -8px rgba(0,0,0,.5)}
+  .recording .recbar{display:flex}
+  .recbar .dot{width:10px;height:10px;border-radius:50%;background:#ff453a;animation:pulse 1.1s infinite}
+  .recbar time{font-variant-numeric:tabular-nums;min-width:38px}
+  .recbar button{background:#ff453a;color:#fff;border-radius:999px;padding:7px 16px;font-weight:700}
+
+  .chip-cta{white-space:nowrap;position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:8;display:flex;align-items:center;gap:10px;padding:11px 20px 11px 16px;border-radius:999px;
+    background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-weight:700;font-size:15px;
+    border:1px solid rgba(255,255,255,.28);transition:background .2s,transform .2s}
+  .chip-cta:hover{background:rgba(255,255,255,.32);transform:translateX(-50%) translateY(-2px)}
+  .chip-cta kbd{font:inherit;opacity:.7}
+  .chip-cta svg{width:20px;height:20px}
+  .busy .chip-cta,.recording .chip-cta{display:none}
+
+  .previews{position:absolute;right:16px;bottom:16px;z-index:15;display:flex;flex-direction:column-reverse;gap:12px;align-items:flex-end;pointer-events:none}
+  .busy .previews{opacity:0}
+  .card{pointer-events:auto;padding:7px;border-radius:17px;background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.3);box-shadow:0 18px 40px -12px rgba(10,5,30,.6)}
+  .thumb{position:relative;border-radius:11px;overflow:hidden;background:rgba(20,12,44,.55)}
+  .clip{position:relative;overflow:hidden;transform-origin:0 0}
+  .thumb .acts{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;background:rgba(14,9,34,.55);opacity:0;transition:opacity .18s}
+  .card:hover .acts,.card:focus-within .acts{opacity:1}
+  @media(hover:none){.thumb .acts{opacity:1}}
+  .acts .pair{display:flex;gap:8px}
+  .acts .tx{background:#fff;color:#241f1d;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
+  .acts .tx:hover{background:#ffe3cf}
+  .acts .ic{position:absolute;top:7px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);color:#241f1d}
+  .acts .ic svg{width:14px;height:14px}
+  .acts .x{right:7px}.acts .pin{left:7px}.acts .pen{left:39px}
+  .card.pinned .pin{background:var(--accent);color:#fff}
+  .card.annotated .pen{background:#ff453a;color:#fff}
+  .ann{position:absolute;inset:6%;width:88%;height:88%;pointer-events:none}
+  .ann ellipse{fill:none;stroke:#ff453a;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s .05s ease-out forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .vbadge{position:absolute;left:7px;bottom:7px;padding:2px 8px;border-radius:7px;background:rgba(14,9,34,.7);color:#fff;font-size:11px;font-weight:700;display:flex;gap:5px;align-items:center;font-variant-numeric:tabular-nums}
+  .vbadge svg{width:9px;height:9px}
+
+  .toast{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 14px);z-index:40;transform:translate(-50%,-8px);padding:9px 18px;border-radius:999px;background:rgba(20,14,42,.88);color:#fff;
+    font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media(max-width:700px){.stage{aspect-ratio:5/4}.chip-cta{font-size:13.5px;padding:10px 16px 10px 13px;bottom:16px}.chip-cta kbd{display:none}.previews{right:10px;bottom:10px}.recbar{bottom:14px}}
+  .psst{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:26px;padding:0 16px;text-align:center;color:var(--muted);font-weight:700;font-size:16px}
+  .psst svg{width:16px;height:16px;flex:none}
+
+  /* ---------- features ---------- */
+  .features{padding:clamp(60px,9vw,130px) clamp(18px,4vw,60px) 0}
+  .fgrid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(40px,5vw,72px) clamp(16px,3vw,44px);text-align:center}
+  .feat svg.ico{width:clamp(52px,5.4vw,70px);height:clamp(52px,5.4vw,70px);margin:0 auto 20px}
+  .feat h3{margin:0;font-size:clamp(21px,2.4vw,32px);line-height:1.1;font-weight:760;letter-spacing:-.03em}
+  .feat p{margin:12px auto 0;max-width:230px;color:var(--muted);font-weight:600;font-size:clamp(14px,1.3vw,17px);line-height:1.4}
+  .scribble{position:relative;display:inline-block;padding:0 .14em;margin-left:.04em}
+  .scribble svg{position:absolute;left:-12%;top:-14%;width:124%;height:128%;pointer-events:none;overflow:visible}
+  .scribble path{fill:none;stroke:var(--blue);stroke-width:3.2;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1}
+  .scribble.in path{animation:draw 1s ease-out forwards}
+  @media(max-width:900px){.fgrid{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- download + faq ---------- */
+  .final{text-align:center;padding:clamp(70px,10vw,140px) 20px 0}
+  .final .note{margin-top:22px;display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:700;font-size:16px}
+  .faq{max-width:760px;margin:clamp(70px,9vw,120px) auto 0;padding:0 20px}
+  .faq h2{margin:0 0 26px;text-align:center;font-size:clamp(34px,4.4vw,56px);letter-spacing:-.04em;font-weight:800}
+  details{background:var(--chip);border-radius:20px;padding:20px 24px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:720;font-size:19px;letter-spacing:-.015em;list-style:none;display:flex;justify-content:space-between;gap:20px}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";color:var(--accent);font-size:1.4rem;line-height:1}
+  summary::after{content:"+";font-size:26px;line-height:.8;color:var(--accent);font-weight:600}
   details[open] summary::after{content:"–"}
-  details p{color:var(--muted);margin:12px 0 0}
-  details a{color:var(--accent)}
+  details p{margin:14px 0 0;color:#6e5e55;font-weight:550;line-height:1.55;font-size:17px}
+  details a{text-decoration:underline;text-underline-offset:3px}
 
-  .final{position:relative;z-index:1;text-align:center;border:1px solid var(--border);border-radius:28px;
-    padding:64px 22px;margin-bottom:70px;overflow:hidden;background:linear-gradient(180deg,#17171d,#0f0f13)}
-  .final::before{content:"";position:absolute;inset:auto 0 -200px 0;height:340px;
-    background:radial-gradient(closest-side,rgba(255,138,58,.3),transparent)}
-  .final > *{position:relative}
-  .final img{width:84px;height:84px;margin-bottom:18px;filter:drop-shadow(0 12px 24px rgba(0,0,0,.5))}
-  .final h2{font-size:clamp(1.8rem,5vw,2.8rem);margin:0 0 10px;letter-spacing:-.03em}
-  .final p{color:var(--muted);margin:0 0 26px}
+  /* ---------- footer ---------- */
+  footer{margin-top:clamp(70px,9vw,120px);text-align:center;position:relative;overflow:hidden}
+  .social{display:flex;gap:12px;justify-content:center;position:relative;z-index:2}
+  .social a{display:grid;place-items:center;width:58px;height:58px;border-radius:17px;background:var(--chip);color:#8b6f60;transition:background .2s}
+  .social a:hover{background:var(--chip2)}
+  .social svg{width:26px;height:26px}
+  .legal{position:relative;z-index:2;margin-top:22px;color:var(--muted);font-weight:650;font-size:15px}
+  .legal a{text-decoration:underline;text-underline-offset:3px}
+  .word{font-size:clamp(170px,36vw,560px);font-weight:900;letter-spacing:-.07em;line-height:.78;color:rgba(120,80,50,.085);margin-top:-.02em;margin-bottom:-.2em;user-select:none;pointer-events:none}
 
-  footer{border-top:1px solid var(--border);padding:26px 0 44px;color:var(--muted);font-size:.88rem;
-    display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
-  footer a{text-decoration:none}
-  footer a:hover{color:var(--text)}
-
-  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s, transform .7s}
-  .reveal.in{opacity:1;transform:none}
-  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.rec{animation:none}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ann ellipse,.scribble path{stroke-dashoffset:0}}
 </style>
 </head>
 <body>
-<div class="glow"></div>
-<div class="wrap">
 
-  <nav>
-    <a class="brand" href="#"><img src="icon.png" alt="">Tack</a>
-    <div class="right">
-      <a href="#native">Native</a>
-      <a href="#features">Features</a>
-      <a href="#faq">FAQ</a>
-      <a class="pill" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg">Download</a>
-    </div>
+<header class="nav">
+  <div class="brand"><img src="icon.png" alt="">Tack<a class="ver" href="https://github.com/itsssdh/Tack/releases/latest">v1.0</a></div>
+  <nav class="nav-r">
+    <a class="lnk" href="#faq"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4.5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 4v1.8h10V8Zm0 3.6v1.8h6.5v-1.8Z"/></svg>FAQs</a>
+    <a class="lnk" href="https://github.com/itsssdh/Tack"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>GitHub</a>
+    <a class="pillbtn" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
   </nav>
+</header>
 
-  <header class="hero">
-    <span class="badge">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.800-1 2.800 1 .1 2.1-.5 2.8-1.4z"/></svg>
-      100% native macOS app
-    </span>
-    <h1>Screenshots and recording,<br><em>truly native.</em></h1>
-    <p class="sub">Tack lives in your menu bar and feels like part of your Mac. Not Electron. Not a web wrapper. Just a fast, light app made for macOS.</p>
+<main>
+  <section class="hero">
+    <h1>Screenshots. Recordings.<br>Made for your <span class="hl">Mac</span></h1>
     <div class="cta-row">
-      <a class="btn primary" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg">Download for Mac</a>
-      <a class="btn ghost" href="https://github.com/itsssdh/Tack">View on GitHub</a>
+      <a class="btn dark" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
+      <a class="btn soft" href="https://github.com/itsssdh/Tack"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>Open source <span class="badge">Free</span></a>
     </div>
-    <p class="meta">Free and open source · macOS 14 Sonoma and later</p>
-  </header>
+  </section>
 
-  <div class="stage reveal" aria-hidden="true">
-    <div class="menubar">
-      <div class="l"><strong>Finder</strong><span>File</span><span>Edit</span><span>View</span></div>
-      <div class="r"><span class="tack"><span class="rec"></span>00:42</span><span>Wed 5:42 PM</span></div>
+  <section class="demo" aria-label="Interactive Tack demo">
+    <div class="stage" id="stage">
+      <div class="scene" id="scene">
+        <div class="win winA"><div class="bar"><i></i><i></i><i></i><b>Launch plan</b></div>
+          <div class="body"><h4>Q3 launch</h4><p>Signups per week</p>
+            <div class="chart"><span style="height:34%"></span><span style="height:48%"></span><span style="height:42%"></span><span style="height:66%"></span><span style="height:58%"></span><span style="height:82%"></span><span style="height:100%"></span></div>
+            <div class="lines"><i style="width:92%"></i><i style="width:78%"></i><i style="width:60%"></i></div>
+          </div></div>
+        <div class="win winB"><div class="bar"><i></i><i></i><i></i><b>Receipt</b></div>
+          <div class="body"><div style="color:#8b8394;font-size:1.3cqw;font-weight:650">Total paid</div><div class="amount">$4,280.00</div>
+            <div class="row"><span>Design work</span><span>$3,200</span></div><div class="row"><span>Hosting</span><span>$1,080</span></div>
+            <div class="qr"></div></div></div>
+      </div>
+
+      <div class="menubar">
+        <div class="l"><span><b>Finder</b></span><span>File</span><span>Edit</span><span>View</span></div>
+        <div class="r">
+          <button class="tbtn" id="tbtn" aria-haspopup="true" aria-expanded="false" aria-label="Tack menu">
+            <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/><circle cx="12" cy="12" r="1.6" fill="#ff8a3a" stroke="none"/></svg>
+            <span class="trec" id="trec">0:00</span>
+          </button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M9 16a4.5 4.5 0 0 1 6 0"/><circle cx="12" cy="19.2" r=".8" fill="#fff"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="2.5"/><path d="M21.5 10.5v3" stroke-linecap="round"/><rect x="4" y="9" width="9" height="6" rx="1" fill="#fff" stroke="none"/></svg>
+          <span id="clock">Wed 28 Oct 19:11</span>
+        </div>
+      </div>
+
+      <div class="tmenu" id="tmenu" role="menu">
+        <button data-act="area" role="menuitem">Area <em>⇧⌘4</em></button>
+        <button data-act="window" role="menuitem">Window <em>⇧⌘5</em></button>
+        <button data-act="full" role="menuitem">Fullscreen <em>⇧⌘3</em></button>
+        <hr>
+        <button data-act="rec" role="menuitem"><span id="recLabel">Record Screen…</span> <em>⇧⌘6</em></button>
+      </div>
+
+      <div class="sel" id="sel" data-mode="area">
+        <div class="dim"></div>
+        <div class="winhl" id="winhl"></div>
+        <div class="box" id="selBox"><div class="size" id="selSize">0 × 0</div></div>
+        <div class="hint" id="selHint">Drag to select an area · Esc to cancel</div>
+      </div>
+
+      <button class="chip-cta" id="chipCta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/></svg>Capture an area <kbd>⇧⌘4</kbd></button>
+
+      <div class="recbar" id="recbar"><span class="dot"></span><time id="recTime">0:00</time><button id="recStop">Stop</button></div>
+      <div class="previews" id="previews"></div>
+      <div class="toast" id="toast" role="status"></div>
+      <div class="flash" id="flash"></div>
     </div>
-    <div class="corner tl"></div><div class="corner br"></div>
-    <div class="popover">
-      <h4><span class="rec"></span> Recording</h4>
-      <div class="row"><span>Webcam overlay</span><span class="toggle on"></span></div>
-      <div class="row"><span>Microphone</span><span class="toggle on"></span></div>
-      <div class="startbtn">Stop recording</div>
+    <div class="psst"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 19.5 12l-6.2 1.5L10 20z"/></svg>Psst… it’s interactive! Try the Tack menu or the button above.</div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="fgrid">
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17V11a3 3 0 0 1 3-3h6M31 8h6a3 3 0 0 1 3 3v6M40 31v6a3 3 0 0 1-3 3h-6M17 40h-6a3 3 0 0 1-3-3v-6"/><circle cx="24" cy="24" r="4" fill="#241f1d" stroke="none"/></svg>
+        <h3>Area, window<br>or full screen</h3><p>One shortcut and you’re capturing.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39l2-9L32 9a4.2 4.2 0 0 1 6 6L17 36z"/><path d="M28 13l7 7"/></svg>
+        <h3>Annotate<br>in a flash</h3><p>Arrows, text, blur, redact and crop.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="#241f1d" stroke="#241f1d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M17 6h14l-2 12 7 7H10l7-7z"/><path d="M24 25v17" fill="none" stroke-width="4"/></svg>
+        <h3>Pin to<br>your screen</h3><p>Keep a capture floating while you work.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14V9a1 1 0 0 1 1-1h5M34 8h5a1 1 0 0 1 1 1v5M40 34v5a1 1 0 0 1-1 1h-5M14 40H9a1 1 0 0 1-1-1v-5"/><path d="M15 18h18M15 24h18M15 30h10"/></svg>
+        <h3>Copy text<br>&amp; QR codes</h3><p>Grab words from anything on screen.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="6" width="14" height="23" rx="7" fill="#241f1d"/><path d="M10 23a14 14 0 0 0 28 0M24 37v6"/></svg>
+        <h3>Record with<br>sound &amp; webcam</h3><p>MP4 or GIF, then trim it right away.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 14v10l7 4"/></svg>
+        <h3>Searchable<br>history</h3><p>Find captures by the text inside them.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="21" width="32" height="21" rx="5" fill="#241f1d"/><path d="M15 21v-6a9 9 0 0 1 18 0v6"/></svg>
+        <h3>Private<br>by design</h3><p>No account, no analytics, no network.</p></div>
+      <div class="feat">
+        <svg class="ico" viewBox="0 0 48 48" fill="#241f1d" stroke="#241f1d" stroke-width="3" stroke-linejoin="round"><path d="M27 4 9 26h12l-3 18 21-24H26z"/></svg>
+        <h3>Truly <span class="scribble" id="scribble">native<svg viewBox="0 0 200 80" preserveAspectRatio="none"><path pathLength="1" d="M20 44C14 20 70 8 118 10c56 2 86 18 78 38-8 22-70 26-124 22C28 66 6 54 14 38"/></svg></span><br>app</h3><p>Light, fast, and made with Swift.</p></div>
     </div>
-    <div class="cam"></div>
+  </section>
+
+  <section class="final">
+    <a class="btn dark" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
+    <div><span class="note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8"/></svg>macOS 14 or later · Free &amp; open source</span></div>
+  </section>
+
+  <section class="faq" id="faq">
+    <h2>Questions</h2>
+    <details><summary>macOS warns when I open Tack. Is that normal?</summary><p>Yes. Tack is free and isn’t signed with a paid Apple certificate, so macOS asks you to confirm it once. Open System Settings &gt; Privacy &amp; Security, scroll down and click <strong>Open Anyway</strong>.</p></details>
+    <details><summary>How do I allow Screen Recording?</summary><p>In Tack’s Settings &gt; General press <strong>Allow…</strong> next to Screen Recording. In the list that opens, press the <strong>+</strong> button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.</p></details>
+    <details><summary>Is Tack really free?</summary><p>Yes. Tack is free and open source, and the code is on <a href="https://github.com/itsssdh/Tack">GitHub</a>.</p></details>
+    <details><summary>Does Tack collect anything?</summary><p>No. There are no accounts and no analytics, and the app doesn’t use the network. Your screenshots and recordings stay on your Mac. See the <a href="privacy.html">privacy page</a>.</p></details>
+    <details><summary>Why does Tack ask for camera and microphone access?</summary><p>Only for the optional webcam bubble and microphone audio in a recording. If you don’t turn them on, Tack doesn’t use them.</p></details>
+    <details><summary>What do I need to run Tack?</summary><p>A Mac running macOS 14 (Sonoma) or later, on Apple Silicon or Intel.</p></details>
+    <details><summary>How do I get help?</summary><p>Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p></details>
+  </section>
+</main>
+
+<footer>
+  <div class="social">
+    <a href="https://github.com/itsssdh/Tack" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
+    <a href="https://github.com/itsssdh/Tack/issues" aria-label="Report an issue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg></a>
+    <a href="privacy.html" aria-label="Privacy"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.2 8 11 4.6-1.8 8-6 8-11V5z"/></svg></a>
   </div>
-
-  <section class="native" id="native">
-    <div class="reveal">
-      <h2>Made for Mac. Actually.</h2>
-      <p class="lead">Native apps launch instantly, sip battery, and behave the way you expect. Tack is built that way from the ground up.</p>
-      <div class="vs">
-        <div class="box good">
-          <h3>Tack</h3>
-          <ul>
-            <li>Native macOS app</li>
-            <li>Opens instantly from the menu bar</li>
-            <li>Light on memory and battery</li>
-            <li>Uses real macOS permissions</li>
-          </ul>
-        </div>
-        <div class="box bad">
-          <h3>Typical web-wrapped apps</h3>
-          <ul>
-            <li>Bundled browser engine</li>
-            <li>Slow to start</li>
-            <li>Heavy on memory and battery</li>
-            <li>Feels out of place on Mac</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="features">
-    <div class="reveal">
-      <h2>Everything you need. Nothing you don't.</h2>
-      <p class="lead">Capture, mark up and share in seconds, then get back to work.</p>
-      <div class="grid">
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="2"/></svg></div><h3>Screenshots</h3><p>Capture an area, a window or the whole screen with a shortcut.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 6l4 4"/></svg></div><h3>Annotation editor</h3><p>Arrows, text, blur, redact, crop and backgrounds before you share.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg></div><h3>Pin to screen</h3><p>Keep a screenshot floating on top while you work.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h3M17 5h3v2M20 17v2h-3M7 19H4v-2M8 9h8M8 12h8M8 15h5"/></svg></div><h3>Text and QR capture</h3><p>Copy text or scan a QR code from anything on screen.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><h3>Searchable history</h3><p>Find old captures by name or by the text inside them.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><h3>Screen recording</h3><p>Record an area, a window or the full screen as MP4 or GIF, then trim it.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18c1.2-2 3-3 5.500-3s4.300 1 5.500 3"/></svg></div><h3>Webcam and microphone</h3><p>Add a webcam bubble and your voice to a recording. Off until you turn them on.</p></div>
-        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Private by default</h3><p>No account, no analytics, no network. Your captures never leave your Mac.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="faq">
-    <div class="reveal">
-      <h2>Questions</h2>
-      <p class="lead">Quick answers.</p>
-      <div class="faq">
-        <details><summary>macOS warns when I open Tack. Is that normal?</summary><p>Yes. Tack is free and not signed with a paid Apple certificate, so macOS asks you to confirm it once. Open System Settings &gt; Privacy &amp; Security, scroll down and click <strong>Open Anyway</strong>.</p></details>
-        <details><summary>How do I allow Screen Recording?</summary><p>In Tack's Settings &gt; General press <strong>Allow…</strong> next to Screen Recording. In the list that opens, press the <strong>+</strong> button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.</p></details>
-        <details><summary>What do I need to run Tack?</summary><p>A Mac running macOS 14 (Sonoma) or later.</p></details>
-        <details><summary>Is Tack really native?</summary><p>Yes. Tack is a native macOS app, not a website packaged in a wrapper.</p></details>
-        <details><summary>Why does Tack ask for camera and microphone access?</summary><p>Only for the optional webcam overlay and microphone audio. If you don't turn them on, Tack doesn't use them. See the <a href="privacy.html">privacy page</a>.</p></details>
-        <details><summary>Is Tack free?</summary><p>Yes. Tack is free and open source. The code is on <a href="https://github.com/itsssdh/Tack">GitHub</a>.</p></details>
-        <details><summary>How do I get help?</summary><p>Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <section class="final reveal">
-    <img src="icon.png" alt="">
-    <h2>Capture the native way.</h2>
-    <p>Light, fast, and built for your Mac.</p>
-    <a class="btn primary" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack-1.0.0.dmg">Download for Mac</a>
-  </section>
-
-  <footer>
-    <span>© 2026 itsssdh</span>
-    <span><a href="privacy.html">Privacy</a> · <a href="https://github.com/itsssdh/Tack">GitHub</a> · <a href="https://github.com/itsssdh/Tack/issues">Support</a></span>
-  </footer>
-</div>
+  <div class="legal">© 2026 itsssdh · <a href="privacy.html">Privacy</a></div>
+  <div class="word" aria-hidden="true">Tack</div>
+</footer>
 
 <script>
-  const els=document.querySelectorAll('.reveal');
-  if('IntersectionObserver' in window){
-    const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
-    els.forEach(e=>io.observe(e));
-  } else els.forEach(e=>e.classList.add('in'));
+(() => {
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), scene = $('scene'), sel = $('sel'), box = $('selBox'), selSize = $('selSize'), selHint = $('selHint'),
+        winhl = $('winhl'), tbtn = $('tbtn'), tmenu = $('tmenu'), previews = $('previews'), toastEl = $('toast'), flash = $('flash'),
+        clock = $('clock'), trec = $('trec'), recTime = $('recTime'), recLabel = $('recLabel'), chip = $('chipCta');
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  let mode = null, recording = false, recStart = 0, toastTimer = 0, drag = null;
+
+  /* live clock, and the recording timer */
+  const fmt = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function tick() {
+    const d = new Date();
+    clock.textContent = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + '  ' +
+                        d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (recording) { const t = fmt(Date.now() - recStart); trec.textContent = t; recTime.textContent = t; }
+  }
+  tick(); setInterval(tick, 500);
+
+  function toast(text) {
+    toastEl.textContent = text; toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1700);
+  }
+
+  /* the Tack menu */
+  const closeMenu = () => { tmenu.classList.remove('open'); tbtn.setAttribute('aria-expanded', 'false'); };
+  tbtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (mode) endMode();
+    const open = tmenu.classList.toggle('open'); tbtn.setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', e => { if (!tmenu.contains(e.target)) closeMenu(); });
+  tmenu.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    closeMenu(); run(b.dataset.act);
+  });
+  chip.addEventListener('click', () => run('area'));
+
+  function run(act) {
+    if (act === 'area' || act === 'window') startMode(act);
+    else if (act === 'full') { shutter(); addCard({ x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight }); }
+    else if (act === 'rec') recording ? stopRecording() : startRecording();
+  }
+
+  /* area and window selection */
+  function startMode(m) {
+    if (recording) { toast('Stop the recording first'); return; }
+    mode = m; sel.dataset.mode = m; sel.classList.add('on'); stage.classList.add('busy');
+    box.style.display = 'none'; winhl.style.display = 'none'; selHint.style.display = '';
+    selHint.textContent = m === 'area' ? 'Drag to select an area · Esc to cancel' : 'Click a window to capture it · Esc to cancel';
+  }
+  function endMode() { mode = null; drag = null; sel.classList.remove('on'); stage.classList.remove('busy'); box.style.display = 'none'; winhl.style.display = 'none'; }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (mode) endMode(); closeMenu(); } });
+
+  const pt = e => { const r = stage.getBoundingClientRect(); return { x: clamp(e.clientX - r.left, 0, r.width), y: clamp(e.clientY - r.top, 0, r.height) }; };
+  sel.addEventListener('pointerdown', e => {
+    if (mode !== 'area') return;
+    sel.setPointerCapture(e.pointerId); drag = pt(e);
+    Object.assign(box.style, { display: 'block', left: drag.x + 'px', top: drag.y + 'px', width: '0px', height: '0px' });
+    selSize.textContent = '0 × 0'; selHint.style.display = 'none';
+  });
+  sel.addEventListener('pointermove', e => {
+    const p = pt(e);
+    if (mode === 'area' && drag) {
+      const x = Math.min(p.x, drag.x), y = Math.min(p.y, drag.y), w = Math.abs(p.x - drag.x), h = Math.abs(p.y - drag.y);
+      Object.assign(box.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+      selSize.textContent = Math.round(w) + ' × ' + Math.round(h);
+    } else if (mode === 'window') {
+      const w = windowAt(p), r = stage.getBoundingClientRect();
+      if (w) { const b = w.getBoundingClientRect(); Object.assign(winhl.style, { display: 'block', left: b.left - r.left + 'px', top: b.top - r.top + 'px', width: b.width + 'px', height: b.height + 'px' }); }
+      else winhl.style.display = 'none';
+    }
+  });
+  sel.addEventListener('pointerup', e => {
+    if (mode === 'area' && drag) {
+      const p = pt(e), x = Math.min(p.x, drag.x), y = Math.min(p.y, drag.y), w = Math.abs(p.x - drag.x), h = Math.abs(p.y - drag.y);
+      drag = null; selHint.style.display = '';
+      if (w < 14 || h < 14) { box.style.display = 'none'; toast('Drag a bit more to select an area'); return; }
+      endMode(); shutter(); addCard({ x, y, w, h });
+    } else if (mode === 'window') {
+      const w = windowAt(pt(e)); if (!w) return;
+      const r = stage.getBoundingClientRect(), b = w.getBoundingClientRect();
+      endMode(); shutter(); addCard({ x: b.left - r.left, y: b.top - r.top, w: b.width, h: b.height });
+    }
+  });
+  function windowAt(p) {
+    const r = stage.getBoundingClientRect(), wins = [...scene.querySelectorAll('.win')].reverse();
+    return wins.find(w => { const b = w.getBoundingClientRect(); return p.x + r.left >= b.left && p.x + r.left <= b.right && p.y + r.top >= b.top && p.y + r.top <= b.bottom; });
+  }
+  function shutter() { flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
+
+  /* recording */
+  function startRecording() { recording = true; recStart = Date.now(); stage.classList.add('recording'); recLabel.textContent = 'Stop Recording'; tick(); toast('Recording… press Stop when you’re done'); }
+  function stopRecording() {
+    const ms = Date.now() - recStart; recording = false; stage.classList.remove('recording'); recLabel.textContent = 'Record Screen…'; tick();
+    addCard({ x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight }, fmt(Math.max(ms, 1000)));
+  }
+  $('recStop').addEventListener('click', stopRecording);
+
+  /* preview cards, like the app's corner previews */
+  const ICON = {
+    pin: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3h8l-1 6 3.5 3.5H5.5L9 9zM12 13v8"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5a2.1 2.1 0 0 1 3 3L8 19z"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+  };
+  function addCard(r, videoLength) {
+    const s = Math.min(240 / r.w, 160 / r.h, 2.5), tw = r.w * s, th = r.h * s, boxW = Math.max(tw, 150), boxH = Math.max(th, 92);
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = '<div class="thumb"><div class="clip"></div>' +
+      (videoLength ? '<span class="vbadge"><svg viewBox="0 0 10 10" fill="#fff"><path d="M2 1l7 4-7 4z"/></svg>' + videoLength + '</span>' : '') +
+      '<div class="acts"><button class="ic x" aria-label="Dismiss">' + ICON.x + '</button><button class="ic pin" aria-label="Pin">' + ICON.pin + '</button><button class="ic pen" aria-label="Annotate">' + ICON.pen + '</button>' +
+      '<div class="pair"><button class="tx" data-do="copy">Copy</button><button class="tx" data-do="save">Save</button></div></div></div>';
+    const thumb = card.querySelector('.thumb'), clip = card.querySelector('.clip');
+    thumb.style.width = boxW + 'px'; thumb.style.height = boxH + 'px';
+    clip.style.cssText = 'width:' + r.w + 'px;height:' + r.h + 'px;transform:scale(' + s + ');margin-left:' + (Math.max(tw, 130) - tw) / 2 / s + 'px';
+    const clone = scene.cloneNode(true); clone.removeAttribute('id');
+    clone.style.cssText = 'position:absolute;left:' + (-r.x) + 'px;top:' + (-r.y) + 'px;width:' + stage.clientWidth + 'px;height:' + stage.clientHeight + 'px';
+    clip.appendChild(clone);
+
+    card.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.do === 'copy') toast(videoLength ? 'Recording copied' : 'Copied to clipboard');
+      else if (b.dataset.do === 'save') toast('Saved to Pictures/Tack');
+      else if (b.classList.contains('pin')) { card.classList.toggle('pinned'); toast(card.classList.contains('pinned') ? 'Pinned to your screen' : 'Unpinned'); }
+      else if (b.classList.contains('pen')) {
+        const on = card.classList.toggle('annotated'), old = thumb.querySelector('.ann'); if (old) old.remove();
+        if (on) thumb.insertAdjacentHTML('beforeend', '<svg class="ann" viewBox="0 0 100 100" preserveAspectRatio="none"><ellipse pathLength="1" cx="50" cy="50" rx="42" ry="38"/></svg>');
+      } else if (b.classList.contains('x')) dismiss(card);
+    });
+    previews.appendChild(card);
+    card.animate([{ transform: 'translateX(34px) scale(.95)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 340, easing: 'cubic-bezier(.2,.9,.2,1)' });
+    const loose = [...previews.children].filter(c => !c.classList.contains('pinned'));
+    if (loose.length > 3) dismiss(loose[0]);
+  }
+  function dismiss(card) {
+    const a = card.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(30px)' }], { duration: 200 });
+    a.onfinish = () => card.remove();
+  }
+
+  /* the hand-drawn circle draws itself when it scrolls into view */
+  const sc = $('scribble');
+  if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { sc.classList.add('in'); o.disconnect(); } }), { threshold: .8 }).observe(sc);
+  else sc.classList.add('in');
+})();
 </script>
 </body>
 </html>
