@@ -10,7 +10,9 @@ A native macOS screenshot and screen recording utility (Swift, SwiftUI, AppKit, 
 
 Tack is free and open source.
 
-## Build and run
+## Build from source (optional)
+
+This is only for people who want to change the code or compile Tack themselves. Most people should use the installer above.
 
 1. Install Apple's command line tools once: `xcode-select --install` (full Xcode is not needed).
 2. In Terminal: `cd` into this folder, then `./build_app.sh` (use `UNIVERSAL=1 ./build_app.sh` to also support Intel Macs).
@@ -57,3 +59,7 @@ Build with `TESTING=1 ./build_app.sh`, then `build/Tack.app/Contents/MacOS/Tack 
 ## Optional cloud sharing
 
 Not built. If added later it would go behind a single `Uploader` protocol that takes a file and returns a link; nothing in the app calls the network today.
+
+## Making a release (for maintainers)
+
+Only needed to publish a new version. Set the version in `Release.config`, then run `./release.sh`. It builds an Apple Silicon + Intel app and packs it into `release/Tack-<version>.dmg`: a window with a background picture, drawn by `dmg/background.swift` and laid out by `dmg/make_dmg.sh`. Signing settings are in `Release.config`. Attach the DMG to a new release on GitHub.
