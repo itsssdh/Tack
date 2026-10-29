@@ -200,9 +200,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
         menu.addItem(.separator())
         addAction(.openSettings, to: menu, title: "Settings…")
-        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
-        updates.target = self
-        menu.addItem(updates)
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
@@ -223,8 +220,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             self?.perform(action)
         }
     }
-
-    @objc private func checkForUpdates() { Updater.shared.checkForUpdates() }
 
     @objc private func openHistoryFile(_ sender: NSMenuItem) {
         if let path = sender.representedObject as? String { NSWorkspace.shared.open(URL(fileURLWithPath: path)) }

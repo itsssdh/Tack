@@ -26,17 +26,18 @@ items = ""
 if os.path.exists(path):
     s = open(path).read()
     items = s[s.index("    <item>"):s.index(tail)] if "<item>" in s else ""
-if f"<sparkle:shortVersionString>{version}<" in items:
-    sys.exit(f"STOP: {version} is already in the appcast.")
+import re
+# Re-releasing the same version (a quiet rebuild with a higher BUILD) replaces its entry.
+items = "".join(i for i in re.findall(r"    <item>.*?</item>\n", items, re.S) if f"<sparkle:shortVersionString>{version}<" not in i)
 esc = notes.replace("&", "&amp;").replace("<", "&lt;")
+desc = f"      <description><![CDATA[<p>{esc}</p>]]></description>\n" if notes else ""
 item = f'''    <item>
       <title>Version {version}</title>
       <pubDate>{email.utils.formatdate(localtime=False)}</pubDate>
       <sparkle:version>{build}</sparkle:version>
       <sparkle:shortVersionString>{version}</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<p>{esc}</p>]]></description>
-      <enclosure url="{url}" {sig} type="application/octet-stream"/>
+{desc}      <enclosure url="{url}" {sig} type="application/octet-stream"/>
     </item>
 '''
 open(path, "w").write(head + item + items + tail)
