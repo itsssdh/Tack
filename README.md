@@ -6,7 +6,7 @@ Website: https://itsssdh.github.io/Tack/
 
 ## Install
 
-1. Download `Tack-1.0.0.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
+1. Download `Tack-1.0.1.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
 2. Open Tack. Because it is not signed with a paid Apple certificate, macOS will warn on first launch: open System Settings > Privacy & Security, scroll down, click **Open Anyway** and confirm with your password or Touch ID. You only do this once.
 3. Allow Screen Recording. In Tack's Settings > General, press **Allow…** next to Screen Recording. System Settings opens to the Screen Recording list: press the **+** button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.
 

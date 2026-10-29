@@ -1374,7 +1374,13 @@ final class EditorWindowController: NSObject, NSWindowDelegate, NSToolbarDelegat
             alert.addButton(withTitle: "Discard")
         }
         alert.addButton(withTitle: "Cancel")
-        return alert.runModal() == .alertFirstButtonReturn
+        // A sheet stays on the editor's own Space; an app-modal alert can land behind a full-screen app.
+        alert.beginSheetModal(for: sender) { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            self.finished = true
+            self.window.close()
+        }
+        return false
     }
 
     func windowWillClose(_ notification: Notification) {
