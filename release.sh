@@ -57,7 +57,7 @@ if [ "$NOTARIZE" = 1 ]; then
     rm release/app.zip
 fi
 
-DMG="release/${APP_NAME// /-}-$VERSION.dmg"
+DMG="release/${APP_NAME// /-}.dmg"   # the file name never changes; only the version inside it does
 NOTE=""
 [ "$NOTARIZE" = 0 ] && NOTE="First time opening? If macOS warns, go to System Settings > Privacy & Security > Open Anyway."
 ./dmg/make_dmg.sh "$APP" "$DMG" "$APP_NAME" "$NOTE"

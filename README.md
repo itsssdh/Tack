@@ -6,7 +6,7 @@ Website: https://itsssdh.github.io/Tack/
 
 ## Install
 
-1. Download `Tack-1.0.2.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
+1. Download `Tack.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
 2. Open Tack. Because it is not signed with a paid Apple certificate, macOS will warn on first launch: open System Settings > Privacy & Security, scroll down, click **Open Anyway** and confirm with your password or Touch ID. You only do this once.
 3. Allow Screen Recording. In Tack's Settings > General, press **Allow…** next to Screen Recording. System Settings opens to the Screen Recording list: press the **+** button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.
 
@@ -64,7 +64,7 @@ Not built. If added later it would go behind a single `Uploader` protocol that t
 
 ## Making a release (for maintainers)
 
-Only needed to publish a new version. Set the version in `Release.config`, then run `./release.sh`. It builds an Apple Silicon + Intel app and packs it into `release/Tack-<version>.dmg`: a window with a background picture, drawn by `dmg/background.swift` and laid out by `dmg/make_dmg.sh`. Signing settings are in `Release.config`. Attach the DMG to a new release on GitHub.
+Only needed to publish a new version. Set the version in `Release.config`, then run `./release.sh`. It builds an Apple Silicon + Intel app and packs it into `release/Tack.dmg` (always the same file name, so the download link never changes): a window with a background picture, drawn by `dmg/background.swift` and laid out by `dmg/make_dmg.sh`. Signing settings are in `Release.config`. Attach the DMG to a new release on GitHub; the site's Download button always fetches `Tack.dmg` from the latest release.
 
 ### Updates
 
