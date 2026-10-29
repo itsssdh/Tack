@@ -70,6 +70,8 @@ private struct IconBadge: View {
 
 struct SettingsView: View {
     @StateObject private var selection = Field(SettingsView.startingPane)
+    @AppStorage(PrefKey.showInDock) private var showInDock = false
+    @AppStorage(PrefKey.showMenuBarIcon) private var showMenuBarIcon = true
 
     /// General, unless a developer flag like `--settings-pane=recording` asks for another (used to photograph each pane).
     private static var startingPane: SettingsPane {
@@ -137,8 +139,11 @@ struct SettingsView: View {
                 }
             }
             Spacer(minLength: 0)
+            // With the menu bar icon hidden, this window is where Tack is used from (through the Dock), so the menu's actions live here.
+            if !(showMenuBarIcon || !showInDock) { SidebarQuickActions() }
         }
         .padding(.top, 56) // room for the window buttons
+        .padding(.bottom, 22)
         .padding(.horizontal, 12)
     }
 
@@ -213,6 +218,76 @@ private struct SidebarRow: View {
                     .fill(Color.primary.opacity(selected ? 0.12 : (hovering.value ? 0.06 : 0)))
             )
             .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering.value = $0 }
+    }
+}
+
+/// The menu bar icon's actions, along the bottom of the sidebar. Shown only while the menu bar icon is hidden.
+private struct SidebarQuickActions: View {
+    private struct Entry: Identifiable {
+        let action: HotkeyAction
+        let title: String
+        let symbol: String
+        var id: String { action.rawValue }
+    }
+
+    var body: some View {
+        // Re-read every second so "Record Screen…" turns into "Stop Recording" if a recording is started with its shortcut.
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            let recording = RecordingController.shared.isRecording
+            let entries = [
+                Entry(action: .captureArea, title: "Area", symbol: "viewfinder"),
+                Entry(action: .captureWindow, title: "Window", symbol: "macwindow"),
+                Entry(action: .captureFullscreen, title: "Fullscreen", symbol: "display"),
+                Entry(action: .recordScreen, title: recording ? "Stop Recording" : "Record Screen", symbol: recording ? "stop.circle.fill" : "record.circle"),
+                Entry(action: .captureText, title: "Text / QR", symbol: "text.viewfinder"),
+                Entry(action: .showHistory, title: "History", symbol: "clock.arrow.circlepath"),
+            ]
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Quick actions")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 16)
+                    .padding(.bottom, 4)
+                ForEach(entries) { entry in
+                    QuickActionRow(title: entry.title, symbol: entry.symbol, shortcut: HotkeyManager.shared.shortcut(for: entry.action).display) {
+                        (NSApp.delegate as? AppDelegate)?.performFromSettings(entry.action)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct QuickActionRow: View {
+    let title: String
+    let symbol: String
+    let shortcut: String
+    let action: () -> Void
+    @StateObject private var hovering = Field(false)
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 18)
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(shortcut)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .fixedSize()
+            }
+            .padding(.vertical, 5)
+            .padding(.horizontal, 12)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(hovering.value ? 0.08 : 0)))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovering.value = $0 }
@@ -459,6 +534,8 @@ private struct CornerDiagram: View {
 private struct GeneralTab: View {
     @AppStorage(PrefKey.appearance) private var appearance = "system"
     @AppStorage(PrefKey.playSound) private var playSound = true
+    @AppStorage(PrefKey.showInDock) private var showInDock = false
+    @AppStorage(PrefKey.showMenuBarIcon) private var showMenuBarIcon = true
     @StateObject private var screenOK = Field(Permissions.screenRecordingGranted)
     @StateObject private var micOK = Field(AVCaptureDevice.authorizationStatus(for: .audio) == .authorized)
     @StateObject private var cameraOK = Field(AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
@@ -560,6 +637,12 @@ private struct GeneralTab: View {
                         launchAtLogin.value = SMAppService.mainApp.status == .enabled
                     }
                 ))
+                CardDivider()
+                ToggleRow(title: "Show in Dock", detail: "Keeps Tack's icon in the Dock and the app switcher.", isOn: $showInDock)
+                    .disabled(showInDock && !showMenuBarIcon) // one of the two always stays on
+                CardDivider()
+                ToggleRow(title: "Show menu bar icon", detail: "Turn it off to use Tack from the Dock. One of the two always stays on.", isOn: $showMenuBarIcon)
+                    .disabled(showMenuBarIcon && !showInDock)
                 CardDivider()
                 ToggleRow(title: "Play a sound after each capture", isOn: $playSound)
                 CardDivider()

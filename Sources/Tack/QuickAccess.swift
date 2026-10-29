@@ -10,11 +10,17 @@ private final class QuickPanel: NSPanel {
 private final class OverlayContentView: NSView {
     var onHover: ((Bool) -> Void)?
     var onClick: (() -> Void)?
+    /// Called once when the pointer is pulled away from the card with the button held, to start dragging it out.
+    var onDrag: ((NSEvent) -> Void)?
     var makeMenu: (() -> NSMenu)?
+    private var pressStart: NSPoint?
+    private var dragging = false
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
-        trackingAreas.forEach(removeTrackingArea)
+        // One area for the life of the view: `.inVisibleRect` already follows resizes, and rebuilding it while the pointer is
+        // inside (as happens when a text card grows) loses the "pointer left" event.
+        guard trackingAreas.isEmpty else { return }
         addTrackingArea(NSTrackingArea(
             rect: bounds,
             options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
@@ -35,7 +41,23 @@ private final class OverlayContentView: NSView {
 
     override func mouseEntered(with event: NSEvent) { onHover?(true) }
     override func mouseExited(with event: NSEvent) { onHover?(false) }
-    override func mouseDown(with event: NSEvent) { onClick?() }
+    override func mouseDown(with event: NSEvent) {
+        pressStart = event.locationInWindow
+        dragging = false
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let start = pressStart, !dragging, let onDrag else { return }
+        if hypot(event.locationInWindow.x - start.x, event.locationInWindow.y - start.y) > 4 {
+            dragging = true
+            onDrag(event)
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        defer { pressStart = nil; dragging = false }
+        if !dragging { onClick?() }
+    }
     override func menu(for event: NSEvent) -> NSMenu? { makeMenu?() }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
@@ -45,6 +67,8 @@ enum PreviewMedia {
     case image
     case video(URL)
     case gif(URL)
+    /// Text read from the screen. The card is drawn from the text; Copy puts the text itself on the clipboard.
+    case text(String)
 }
 
 /// Plays a video silently, on a loop, filling its frame.
@@ -84,6 +108,121 @@ private final class LoopingVideoView: NSView {
     }
 }
 
+/// Text read from the screen, drawn as a preview card. The card is only as big as its text needs, up to a limit; text that
+/// does not fit ends in "…" and the card grows to show more of it while the pointer is over it.
+private enum TextCard {
+    /// Room kept clear for the close button above the text and the pin and Copy buttons below it.
+    static let side: CGFloat = 16, top: CGFloat = 40, bottom: CGFloat = 44
+    static let minSize = NSSize(width: 150, height: 112)
+
+    /// The biggest a resting card gets, following the Preview size setting.
+    static var limit: NSSize {
+        switch UserDefaults.standard.string(forKey: PrefKey.overlaySize) {
+        case "small": return NSSize(width: 170, height: 170)
+        case "large": return NSSize(width: 300, height: 270)
+        default: return NSSize(width: 220, height: 205)
+        }
+    }
+
+    private static var font: NSFont { .systemFont(ofSize: 12.5 * limit.width / 220, weight: .medium) }
+    private static let spacing: CGFloat = 2
+
+    private static func attributed(_ text: String) -> NSTextStorage {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = spacing
+        return NSTextStorage(string: text, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.white.withAlphaComponent(0.92),
+            .paragraphStyle: paragraph,
+        ])
+    }
+
+    /// How much room the whole text takes when wrapped to `width` (the width of the whole card).
+    private static func measure(_ text: String, cardWidth: CGFloat) -> NSSize {
+        let storage = attributed(text)
+        let layout = NSLayoutManager()
+        let container = NSTextContainer(size: NSSize(width: max(cardWidth - 2 * side, 1), height: .greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        layout.ensureLayout(for: container)
+        let used = layout.usedRect(for: container)
+        return NSSize(width: ceil(used.width), height: ceil(used.height))
+    }
+
+    /// Small text gives a small card; a lot of text gives the biggest resting card.
+    static func collapsedSize(for text: String) -> NSSize {
+        let max = limit
+        let natural = measure(text, cardWidth: 100_000).width + 2 * side
+        let width = min(Swift.max(natural.rounded(.up), minSize.width), max.width)
+        let needed = top + measure(text, cardWidth: width).height + bottom
+        return NSSize(width: width.rounded(), height: min(Swift.max(needed.rounded(.up), minSize.height), max.height))
+    }
+
+    /// The size the card grows to under the pointer, or nil when the resting card already shows everything.
+    /// Never taller than the screen; text beyond that ends in "…".
+    static func expandedSize(for text: String, collapsed: NSSize, in visible: NSRect) -> NSSize? {
+        let needsAll = top + measure(text, cardWidth: collapsed.width).height + bottom
+        guard needsAll > collapsed.height + 0.5 else { return nil }
+        let width = Swift.max(collapsed.width, min(limit.width * 1.7, visible.width * 0.45)).rounded()
+        let needed = top + measure(text, cardWidth: width).height + bottom
+        let height = min(Swift.max(needed.rounded(.up), collapsed.height), visible.height - 32)
+        let size = NSSize(width: width, height: height.rounded())
+        return (size.width > collapsed.width || size.height > collapsed.height) ? size : nil
+    }
+
+    /// Draws the card at `size` points on a display with the given pixel density.
+    static func render(_ text: String, size: NSSize, scale: CGFloat) -> CGImage? {
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(size.width * scale), pixelsHigh: Int(size.height * scale),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ) else { return nil }
+        rep.size = size // points; the context is made after this so it draws in points, not pixels
+        guard let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        NSColor(white: 0.12, alpha: 1).setFill()
+        NSRect(origin: .zero, size: size).fill()
+
+        // Work out how much of the text fits, and mark where it was cut with "…" (also when the cut falls at the end of a line).
+        let area = NSSize(width: size.width - 2 * side, height: size.height - top - bottom)
+        let lineHeight = font.ascender - font.descender + font.leading
+        let maxLines = Swift.max(1, Int((area.height + spacing) / (lineHeight + spacing)))
+        var shown = text
+        do {
+            let probe = NSLayoutManager()
+            let box = NSTextContainer(size: area)
+            box.lineFragmentPadding = 0
+            probe.addTextContainer(box)
+            let storage = attributed(text)
+            storage.addLayoutManager(probe)
+            let range = probe.characterRange(forGlyphRange: probe.glyphRange(for: box), actualGlyphRange: nil)
+            if range.upperBound < (text as NSString).length {
+                let kept = (text as NSString).substring(to: range.upperBound).trimmingCharacters(in: .whitespacesAndNewlines)
+                shown = kept + "…"
+            }
+        }
+
+        let storage = attributed(shown)
+        let layout = NSLayoutManager()
+        let container = NSTextContainer(size: area)
+        container.lineFragmentPadding = 0
+        container.lineBreakMode = .byTruncatingTail
+        container.maximumNumberOfLines = maxLines
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        // TextKit draws from the top down, so flip the drawing space.
+        let cg = ctx.cgContext
+        cg.translateBy(x: 0, y: size.height)
+        cg.scaleBy(x: 1, y: -1)
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: cg, flipped: true)
+        layout.drawGlyphs(forGlyphRange: layout.glyphRange(for: container), at: NSPoint(x: side, y: top))
+        NSGraphicsContext.restoreGraphicsState()
+        return rep.cgImage
+    }
+}
+
 /// One floating preview. Stays until the user chooses Copy or Save (or dismisses it), so a capture is never lost by accident.
 @MainActor
 private final class QuickAccessItem: NSObject {
@@ -120,6 +259,16 @@ private final class QuickAccessItem: NSObject {
     var hiddenInGroup = false
     private var pinButton: PillButton?
     private var pinBadge: NSView?
+    /// Keeps the drag's data provider alive while a drag is under way.
+    fileprivate var dragData: AnyObject?
+    /// A text card that is cut off grows while the pointer is over it. The picture view shows whichever drawing is current.
+    private var textImageView: NSView?
+    /// Where the stack puts this card when it is not grown. Set by the layout, never read back from the window,
+    /// which may be part-way through an animation.
+    var restFrame: NSRect?
+    private(set) var isExpanded = false
+    /// While a card is grown, this checks that the pointer is still over it, in case the "pointer left" event is missed.
+    private var pointerWatch: Timer?
 
     init(
         image: CGImage,
@@ -137,6 +286,19 @@ private final class QuickAccessItem: NSObject {
         self.onEdit = onEdit
 
         let scale = captureScale
+        if case .text = media {
+            guard case .text(let string) = media else { fatalError("unreachable") }
+            self.size = TextCard.collapsedSize(for: string)
+            self.panel = QuickPanel(
+                contentRect: NSRect(origin: .zero, size: size),
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            super.init()
+            buildUI(scale: scale)
+            return
+        }
         let natural = NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
         let box: NSSize
         switch UserDefaults.standard.string(forKey: PrefKey.overlaySize) {
@@ -170,7 +332,8 @@ private final class QuickAccessItem: NSObject {
         panel.hasShadow = true // the preview is an opaque rounded picture, so a window shadow suits it
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // Stationary: switching desktops or opening Mission Control leaves the card alone instead of moving or hiding it.
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
         let content = OverlayContentView(frame: NSRect(origin: .zero, size: size))
         content.wantsLayer = true
@@ -185,6 +348,10 @@ private final class QuickAccessItem: NSObject {
             self.onEdit(self)
         }
         content.makeMenu = { [weak self] in self?.buildMenu() ?? NSMenu() }
+        content.onDrag = { [weak self, weak content] event in
+            guard let self, let content else { return }
+            self.beginDrag(with: event, from: content)
+        }
 
         let imageView = NSView(frame: content.bounds)
         imageView.autoresizingMask = [.width, .height]
@@ -194,6 +361,7 @@ private final class QuickAccessItem: NSObject {
         imageView.layer?.contentsScale = scale
         imageView.layer?.magnificationFilter = .trilinear
         content.addSubview(imageView)
+        if isText { textImageView = imageView }
 
         switch media {
         case .image:
@@ -203,6 +371,8 @@ private final class QuickAccessItem: NSObject {
             v.autoresizingMask = [.width, .height]
             content.addSubview(v)
             videoView = v
+        case .text:
+            break // the picture already is the text
         case .gif(let url):
             // The first frame is already showing; this replaces it with the animation.
             let v = NSImageView(frame: content.bounds)
@@ -270,10 +440,17 @@ private final class QuickAccessItem: NSObject {
 
         layoutButtons(in: dim)
 
-        content.onHover = { [weak dim] inside in
+        content.onHover = { [weak self, weak dim] inside in
+            if !inside, let self, self.isExpanded, NSMouseInRect(NSEvent.mouseLocation, self.panel.frame, false) { return }
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = 0.15
                 dim?.animator().alphaValue = inside ? 1 : 0
+            }
+            guard let self else { return }
+            if inside {
+                self.expand()
+            } else if !(self.isExpanded && NSMouseInRect(NSEvent.mouseLocation, self.panel.frame, false)) {
+                self.collapse() // growing or shrinking can report a false "pointer left"; only collapse when it really has
             }
         }
 
@@ -283,6 +460,19 @@ private final class QuickAccessItem: NSObject {
     /// Copy above Save, centered, growing with the card. The corner buttons take 10 pt of inset plus their own size
     /// at the top and bottom, so the pair stays between them whatever the card's size.
     private func layoutButtons(in dim: NSView) {
+        if isText, let pin = pinButton {
+            // Copy sits beside the pin button along the bottom, so it never covers the text.
+            let copy = Glass.button("Copy", symbol: "doc.on.doc", prominent: true, size: .small, target: self, action: #selector(copyTapped))
+            copy.translatesAutoresizingMaskIntoConstraints = false
+            dim.addSubview(copy)
+            NSLayoutConstraint.activate([
+                copy.leadingAnchor.constraint(equalTo: pin.trailingAnchor, constant: 8),
+                copy.centerYAnchor.constraint(equalTo: pin.centerYAnchor),
+                copy.widthAnchor.constraint(equalToConstant: 84),
+                copy.heightAnchor.constraint(equalToConstant: Self.cornerButton),
+            ])
+            return
+        }
         let w = size.width, h = size.height
         let clearance: CGFloat = 10 + Self.cornerButton + 8
         let spacing: CGFloat = 10
@@ -316,13 +506,64 @@ private final class QuickAccessItem: NSObject {
         ])
     }
 
+    /// Grows a cut-off text card away from its corner of the screen (over the cards beside it) to show more of the text.
+    private func expand() {
+        guard case .text(let string) = media, !isExpanded, !hiddenInGroup, let view = textImageView else { return }
+        let visible = screen.visibleFrame
+        guard let target = TextCard.expandedSize(for: string, collapsed: size, in: visible),
+              let image = TextCard.render(string, size: target, scale: captureScale) else { return }
+        let rest = restFrame ?? panel.frame
+        var frame = NSRect(origin: .zero, size: target)
+        frame.origin.x = rest.midX > visible.midX ? rest.maxX - target.width : rest.minX
+        frame.origin.y = rest.midY > visible.midY ? rest.maxY - target.height : rest.minY
+        frame.origin.x = min(max(frame.minX, visible.minX + 8), visible.maxX - 8 - target.width)
+        frame.origin.y = min(max(frame.minY, visible.minY + 8), visible.maxY - 8 - target.height)
+        isExpanded = true
+        pointerWatch?.invalidate()
+        pointerWatch = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isExpanded else { return }
+                if !NSMouseInRect(NSEvent.mouseLocation, self.panel.frame, false) {
+                    (self.panel.contentView as? OverlayContentView)?.onHover?(false)
+                }
+            }
+        }
+        view.layer?.contents = image
+        panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.18
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(frame, display: true)
+        }
+    }
+
+    /// Back to the resting size. `animated: false` is used when the stack is being laid out again.
+    func collapse(animated: Bool = true) {
+        guard isExpanded, let rest = restFrame, let view = textImageView else { return }
+        isExpanded = false
+        pointerWatch?.invalidate()
+        pointerWatch = nil
+        view.layer?.contents = image
+        if animated {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.15
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().setFrame(rest, display: true)
+            }
+        } else {
+            panel.setFrame(rest, display: true)
+        }
+    }
+
     /// Used by the visual test to show the hover state.
     func simulateHover() { (panel.contentView as? OverlayContentView)?.onHover?(true) }
 
     /// GIFs have nothing to edit; photos open the editor and videos open the trimmer.
     var canEdit: Bool {
-        if case .gif = media { return false }
-        return true
+        switch media {
+        case .gif, .text: return false
+        default: return true
+        }
     }
 
     /// Play or pause the video (folded-away previews should not keep playing).
@@ -333,7 +574,8 @@ private final class QuickAccessItem: NSObject {
         let menu = NSMenu()
         var entries: [(String, Selector)] = []
         if canEdit { entries.append((isVideo ? "Trim…" : "Edit…", #selector(editTapped))) }
-        if !isVideo, !isGIF {
+        if isText { entries.append(("Copy", #selector(copyTapped))) }
+        if !isVideo, !isGIF, !isText {
             entries.append(("Pin to Screen", #selector(pinTapped)))
             entries.append(("Copy Text (OCR / QR)", #selector(ocrTapped)))
         }
@@ -388,6 +630,7 @@ private final class QuickAccessItem: NSObject {
 
     private var isVideo: Bool { if case .video = media { return true }; return false }
     private var isGIF: Bool { if case .gif = media { return true }; return false }
+    var isText: Bool { if case .text = media { return true }; return false }
 
     /// A picture goes on the clipboard as an image; a video or GIF as its file, so it pastes into Finder, Mail, Messages.
     private func copyToClipboard() {
@@ -397,6 +640,8 @@ private final class QuickAccessItem: NSObject {
         case .video(let url), .gif(let url):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.writeObjects([url as NSURL])
+        case .text(let string):
+            Clipboard.copy(text: string)
         }
     }
 
@@ -425,10 +670,137 @@ private final class QuickAccessItem: NSObject {
 }
 
 
+// MARK: Dragging a preview out
+
+/// Brings another app to the front. Recent macOS versions only let an app be activated by an app that is itself active and
+/// hands the activation over, so Tack takes it first and then passes it on; if the system still refuses, the app is
+/// asked to open again with activation on, which also raises it.
+@MainActor
+private func bringToFront(pid: pid_t) {
+    guard let target = NSRunningApplication(processIdentifier: pid), !target.isTerminated else { return }
+    NSApp.activate(ignoringOtherApps: true)
+    NSApp.yieldActivation(to: target)
+    target.activate(from: NSRunningApplication.current, options: [])
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        guard !target.isActive, let url = target.bundleURL else { return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
+    }
+}
+
+/// Hands a screenshot to whatever it is dropped on, as a file and as image data, so it works in text boxes, chats, mail and Finder.
+/// The file is only written when the drop target asks for it.
+private final class PreviewDragData: NSObject, NSPasteboardItemDataProvider {
+    private let image: CGImage
+
+    init(image: CGImage) { self.image = image }
+
+    /// Where dragged files are made. Old ones are swept up so screenshots do not pile up in the temporary folder.
+    static var folder: URL { URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Tack Drag", isDirectory: true) }
+
+    static func sweep() {
+        let cutoff = Date().addingTimeInterval(-3600)
+        let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        for url in items where ((try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast) < cutoff {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
+        MainActor.assumeIsolated {
+            switch type {
+            case .fileURL:
+                let format = Prefs.imageFormat
+                guard let data = format.encode(image, quality: Prefs.jpegQuality) else { return }
+                let folder = Self.folder.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                let url = folder.appendingPathComponent(FileSaver.filename(ext: format.fileExtension))
+                do {
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    try data.write(to: url, options: .atomic)
+                    item.setString(url.absoluteString, forType: .fileURL)
+                } catch {}
+            case .png:
+                item.setData(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) ?? Data(), forType: .png)
+            case .tiff:
+                item.setData(NSBitmapImageRep(cgImage: image).tiffRepresentation ?? Data(), forType: .tiff)
+            default:
+                break
+            }
+        }
+    }
+}
+
+extension QuickAccessItem: NSDraggingSource {
+    /// Pull a preview out of its corner and drop it into another app: a picture arrives as an image file, a recording as its
+    /// file, text as text. Like Apple's screenshot previews, the card goes away once it has been dropped somewhere.
+    fileprivate func beginDrag(with event: NSEvent, from view: NSView) {
+        let writer: NSPasteboardWriting
+        switch media {
+        case .image:
+            PreviewDragData.sweep()
+            let pasteboardItem = NSPasteboardItem()
+            let provider = PreviewDragData(image: image)
+            dragData = provider // the pasteboard only keeps a weak reference
+            pasteboardItem.setDataProvider(provider, forTypes: [.fileURL, .png, .tiff])
+            writer = pasteboardItem
+        case .video(let url), .gif(let url):
+            writer = url as NSURL
+        case .text(let string):
+            writer = string as NSString
+        }
+        let item = NSDraggingItem(pasteboardWriter: writer)
+        item.setDraggingFrame(view.bounds, contents: NSImage(cgImage: image, size: view.bounds.size))
+        view.beginDraggingSession(with: [item], event: event, source: self)
+    }
+
+    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        context == .outsideApplication ? .copy : []
+    }
+
+    func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {
+        panel.animator().alphaValue = 0.45
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        dragData = nil
+        if !operation.isEmpty { Self.focusApp(at: screenPoint) }
+        if operation.isEmpty || pinned {
+            panel.animator().alphaValue = 1 // dropped nowhere, or pinned: the card stays
+        } else {
+            dismissTapped()
+        }
+    }
+
+    /// The app that was dropped on comes to the front, so you can carry on typing or editing right where the drop landed.
+    private static func focusApp(at screenPoint: NSPoint) {
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let point = CGPoint(x: screenPoint.x, y: primaryHeight - screenPoint.y) // window lists count from the top left
+        let me = ProcessInfo.processInfo.processIdentifier
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        for entry in windows { // front to back
+            guard let layer = entry[kCGWindowLayer as String] as? Int, (0...8).contains(layer), // ordinary, floating and modal windows; not the menu bar or Dock
+                  let pid = entry[kCGWindowOwnerPID as String] as? Int32, pid != me,
+                  let b = entry[kCGWindowBounds as String] as? [String: CGFloat],
+                  let x = b["X"], let y = b["Y"], let w = b["Width"], let h = b["Height"],
+                  CGRect(x: x, y: y, width: w, height: h).contains(point) else { continue }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { bringToFront(pid: pid) }
+            return
+        }
+    }
+}
+
 // MARK: Pinned group
 
 private final class FlippedView: NSView {
     override var isFlipped: Bool { true }
+}
+
+/// "3 pinned", "3 screenshots" or, when text cards are among them, "3 previews".
+@MainActor
+private func groupTitle(for items: [QuickAccessItem]) -> String {
+    if items.allSatisfy({ $0.pinned }) { return "\(items.count) pinned" }
+    return items.contains(where: { $0.isText }) ? "\(items.count) previews" : "\(items.count) screenshots"
 }
 
 /// What the pinned previews turn into when the stack reaches the top of the screen: one card with a count. Click it for the list.
@@ -456,7 +828,7 @@ private final class PinnedGroupTile: NSObject {
         panel.hasShadow = true
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
         let content = OverlayContentView(frame: NSRect(origin: .zero, size: Self.size))
         content.wantsLayer = true
@@ -494,9 +866,17 @@ private final class PinnedGroupTile: NSObject {
 
     func update(items: [QuickAccessItem]) {
         let allPinned = items.allSatisfy { $0.pinned }
-        countLabel.stringValue = allPinned ? "\(items.count) pinned" : "\(items.count) screenshots"
+        countLabel.stringValue = groupTitle(for: items)
         icon.image = NSImage(systemSymbolName: allPinned ? "pin.fill" : "photo.on.rectangle", accessibilityDescription: nil)
         imageLayerView.layer?.contents = items.first?.image
+        // A text card is taller than the tile; show its top lines instead of the middle of the card.
+        if let first = items.first, first.isText {
+            let tileAspect = Self.size.width / Self.size.height
+            let shown = min(1, (CGFloat(first.image.width) / tileAspect) / CGFloat(max(first.image.height, 1)))
+            imageLayerView.layer?.contentsRect = CGRect(x: 0, y: 1 - shown, width: 1, height: shown)
+        } else {
+            imageLayerView.layer?.contentsRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
     }
 }
 
@@ -562,7 +942,7 @@ private final class PinnedMenu: NSObject {
         let visible = screen.visibleFrame
 
         let anyPinned = items.contains { $0.pinned }
-        let title = glassLabel(items.allSatisfy { $0.pinned } ? "\(items.count) pinned" : "\(items.count) screenshots", size: 14, weight: .semibold)
+        let title = glassLabel(groupTitle(for: items), size: 14, weight: .semibold)
         let unpinAll = Glass.button("Unpin All", symbol: "pin.slash.fill", size: .small, target: self, action: #selector(unpinAllTapped))
         unpinAll.toolTip = "Unpin every preview"
         let spacer = NSView()
@@ -643,6 +1023,8 @@ private final class PinnedMenu: NSObject {
 
     private func thumbHeight(for item: QuickAccessItem) -> CGFloat {
         let ratio = CGFloat(item.image.height) / CGFloat(max(item.image.width, 1))
+        // A text card keeps its full shape so none of the text is cut off; pictures are held to a short strip.
+        if item.isText { return (Self.thumbWidth * ratio).rounded() }
         return min(max((Self.thumbWidth * ratio).rounded(), 64), 140)
     }
 
@@ -656,7 +1038,11 @@ private final class PinnedMenu: NSObject {
         thumb.layer?.contentsGravity = .resizeAspectFill
         thumb.layer?.borderWidth = 1
         thumb.layer?.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
-        thumb.onClick = { [weak item] in item?.editTapped() }
+        if item.canEdit { thumb.onClick = { [weak item] in item?.editTapped() } } // text has nothing to edit, and editing closes the preview
+        thumb.onDrag = { [weak item, weak thumb] event in
+            guard let item, let thumb else { return }
+            item.beginDrag(with: event, from: thumb)
+        }
         thumb.translatesAutoresizingMaskIntoConstraints = false
         thumb.widthAnchor.constraint(equalToConstant: Self.thumbWidth).isActive = true
         thumb.heightAnchor.constraint(equalToConstant: thumbHeight(for: item)).isActive = true
@@ -670,13 +1056,13 @@ private final class PinnedMenu: NSObject {
             b.heightAnchor.constraint(equalToConstant: 26).isActive = true
             return b
         }
-        let copy = tag(Glass.button("Copy", size: .small, target: self, action: #selector(rowAction(_:))), "copy", width: Self.buttonColumn)
+        let copy = tag(Glass.button("Copy", prominent: item.isText, size: .small, target: self, action: #selector(rowAction(_:))), "copy", width: Self.buttonColumn)
         let save = tag(Glass.button("Save", prominent: true, size: .small, target: self, action: #selector(rowAction(_:))), "save", width: Self.buttonColumn)
         let unpin = tag(Glass.iconButton(item.pinned ? "pin.slash.fill" : "pin.fill", tip: item.pinned ? "Unpin" : "Pin", target: self, action: #selector(rowAction(_:))), "pin", width: 30)
         let dismiss = tag(Glass.iconButton("xmark", tip: "Dismiss without saving", target: self, action: #selector(rowAction(_:))), "dismiss", width: 30)
         let icons = NSStackView(views: [unpin, dismiss])
         icons.spacing = 10
-        let buttons = NSStackView(views: [copy, save, icons])
+        let buttons = NSStackView(views: item.isText ? [copy, icons] : [copy, save, icons]) // text can only be copied
         buttons.orientation = .vertical
         buttons.alignment = .leading
         buttons.spacing = 8
@@ -752,7 +1138,7 @@ final class QuickAccess {
                 switch done.media {
                 case .image: Editor.open(done.image, scale: done.captureScale)
                 case .video(let url): VideoEditor.open(url)
-                case .gif: break
+                case .gif, .text: break
                 }
             }
         )
@@ -770,20 +1156,60 @@ final class QuickAccess {
             return
         }
         let target = layout.frames[ObjectIdentifier(item)] ?? .zero
+        item.restFrame = target
         let slide = (target.width + margin + 20) * (isRight ? 1 : -1)
         item.panel.setFrame(target.offsetBy(dx: slide, dy: 0), display: false)
         item.panel.alphaValue = 0
         item.panel.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { ctx in
+        NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.22
             item.panel.animator().setFrame(target, display: true)
             item.panel.animator().alphaValue = 1
-        }
+        }, completionHandler: { [weak item] in
+            // A desktop switch in the middle of the slide-in can freeze it half-way; whatever happened, the card ends up shown.
+            MainActor.assumeIsolated {
+                guard let item, !item.hiddenInGroup, !item.isExpanded else { return }
+                item.panel.alphaValue = 1
+                item.panel.orderFrontRegardless()
+            }
+        })
         apply(layout, skipping: item)
         if showingActions {
             // Show Copy / Save right away, as if the pointer were over it; moving the pointer in and out works as usual.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { item.simulateHover() }
         }
+    }
+
+    private var healWork: DispatchWorkItem?
+
+    /// After a desktop switch, an app switch or a display change, macOS can leave a floating panel hidden or half-faded.
+    /// Everything that should be showing is put back in its place, fully visible, in front.
+    func healAfterSpaceChange() {
+        healWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            let layout = self.computeLayout()
+            for item in self.items where !item.hiddenInGroup && !layout.folded.contains(ObjectIdentifier(item)) {
+                item.collapse(animated: false)
+                if let frame = layout.frames[ObjectIdentifier(item)] { item.panel.setFrame(frame, display: true) }
+                item.panel.alphaValue = 1
+                item.panel.orderFrontRegardless()
+            }
+            for tile in self.groups.values {
+                tile.panel.alphaValue = 1
+                tile.panel.orderFrontRegardless()
+            }
+        }
+        healWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+    }
+
+    /// Shows text read from the screen as a preview card in the same corner. Copy puts the whole text on the clipboard.
+    func presentText(_ text: String) {
+        let screen = NSScreen.screens.first ?? NSScreen.main!
+        let scale = screen.backingScaleFactor
+        guard let image = TextCard.render(text, size: TextCard.collapsedSize(for: text), scale: scale) else { return }
+        present(image, scale: scale, media: .text(text))
     }
 
     /// Shows a finished recording as a preview that plays in the card. The file is already saved.
@@ -966,11 +1392,13 @@ final class QuickAccess {
     private func relayout() { apply(computeLayout(), skipping: nil) }
 
     private func apply(_ layout: Layout, skipping: QuickAccessItem?) {
+        items.forEach { $0.collapse(animated: false) } // a card that grew under the pointer goes back before the stack moves
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2
             for item in items where item !== skipping {
                 let id = ObjectIdentifier(item)
                 guard let frame = layout.frames[id] else { continue }
+                if !layout.folded.contains(id) { item.restFrame = frame }
                 let panel = item.panel
                 if layout.folded.contains(id) {
                     if item.hiddenInGroup {

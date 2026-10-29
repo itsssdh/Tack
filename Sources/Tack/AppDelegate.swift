@@ -5,15 +5,24 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem!
+    private var dockMenu: NSMenu?
     private var settingsWindow: NSWindow?
     var settingsFrame: NSRect? { settingsWindow?.frame }
+    /// The Settings window, when it is open on the desktop you are looking at; alerts attach to it as sheets.
+    var sheetHost: NSWindow? {
+        guard let w = settingsWindow, w.isVisible, w.isOnActiveSpace else { return nil }
+        return w
+    }
     var settingsIsInFront: Bool { settingsWindow?.isVisible == true && NSApp.isActive && settingsWindow?.isKeyWindow == true }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let openedByUser = !launchedAtLogin // read now, while the launch event is still current
+        SpaceFix.install()
         Prefs.registerDefaults()
         Prefs.applyAppearance()
         installMainMenu()
         _ = Updater.shared   // starts the automatic update checks
+        Scanner.warmUp()     // so the first text capture is not slow
 
         if let i = CommandLine.arguments.firstIndex(of: "--make-icon"), i + 1 < CommandLine.arguments.count {
             do {
@@ -38,6 +47,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
+        applyPresence()
+        // Floating previews and pins are re-shown after anything that can make macOS hide them.
+        let keepPanelsVisible: @Sendable (Notification) -> Void = { _ in
+            MainActor.assumeIsolated {
+                QuickAccess.shared.healAfterSpaceChange()
+                PinManager.shared.bringAllToFront()
+            }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main, using: keepPanelsVisible)
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main, using: keepPanelsVisible)
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: keepPanelsVisible)
+        // Settings > General > Show in Dock / Show menu bar icon take effect straight away.
+        NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applyPresence() }
+        }
 
         RecordingController.shared.onStateChange = { [weak self] in self?.updateStatusIcon() }
         HotkeyManager.shared.onAction = { [weak self] action in self?.perform(action) }
@@ -50,7 +74,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         }
 
         // Build the Settings window now, hidden, so the first time it opens it is already laid out instead of building as it appears.
-        DispatchQueue.main.async { [weak self] in self?.prepareSettings() }
+        // When Tack was opened (not started at login) Settings shows straight away, as it does for a second opening.
+        DispatchQueue.main.async { [weak self] in
+            self?.prepareSettings()
+            if openedByUser { self?.showSettings() }
+        }
 
         #if FRAMEGRAB_TESTING
         if CommandLine.arguments.contains("--show-takeover-prompt") {
@@ -89,6 +117,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         if let error = NativeScreenshots.replaceWithTack() {
             Alerts.show(title: "Could not switch the shortcuts", message: error + " You can try again in Settings > Shortcuts.")
         }
+    }
+
+    /// The menu bar icon and the Dock icon, as chosen in Settings.
+    private var applyingPresence = false
+    private func applyPresence() {
+        // Showing or hiding the status item makes AppKit save a setting, which would call this again.
+        guard !applyingPresence else { return }
+        applyingPresence = true
+        defer { applyingPresence = false }
+        let showIcon = Prefs.showMenuBarIcon
+        if statusItem.isVisible != showIcon { statusItem.isVisible = showIcon }
+        DockPresence.refresh()
+    }
+
+    /// Opening Tack again (from Launchpad, the Applications folder, Spotlight or the Dock icon) always opens Settings.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings()
+        return true
+    }
+
+    /// True when macOS started Tack because it is a login item, rather than because someone opened it.
+    private var launchedAtLogin: Bool {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        return event?.eventID == AEEventID(kAEOpenApplication)
+            && event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
+    }
+
+    /// Right-clicking the Dock icon shows the same menu as the menu bar icon.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        menu.delegate = self
+        dockMenu = menu
+        return menu
     }
 
     private func updateStatusIcon() {
@@ -132,6 +193,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         NSApp.mainMenu = main
     }
 
+    /// The Settings window's own copy of the menu: a capture or recording closes Settings first, so it is not in the picture.
+    func performFromSettings(_ action: HotkeyAction) {
+        switch action {
+        case .showHistory, .openSettings, .openEditor:
+            perform(action)
+        default:
+            settingsWindow?.close()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in self?.perform(action) }
+        }
+    }
+
     func perform(_ action: HotkeyAction) {
         switch action {
         case .captureArea: CaptureService.shared.captureArea()
@@ -159,6 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
         let recording = RecordingController.shared.isRecording
         addAction(.recordScreen, to: menu, title: recording ? "Stop Recording" : "Record Screen…")
+        addAction(.captureText, to: menu, title: "Capture Text / QR…")
         menu.addItem(.separator())
 
         // Recent
@@ -200,7 +273,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
         menu.addItem(.separator())
         addAction(.openSettings, to: menu, title: "Settings…")
-        menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        if menu !== dockMenu { // the Dock adds its own Quit
+            menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        }
     }
 
     private func addAction(_ action: HotkeyAction, to menu: NSMenu, title: String? = nil) {
@@ -253,6 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         window.isReleasedWhenClosed = false
         window.isMovableByWindowBackground = true
         window.hidesOnDeactivate = false // a real window: it stays put when you click elsewhere
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary] // opens over a full-screen app instead of switching away from it
         window.delegate = self
         window.center()
         hosting.view.layoutSubtreeIfNeeded()

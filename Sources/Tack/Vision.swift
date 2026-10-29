@@ -40,101 +40,29 @@ enum Scanner {
     }
 }
 
-/// Small window that shows what OCR / QR scanning found.
-@MainActor
-final class ScanResultWindow: NSObject {
-    private static var open: [ScanResultWindow] = []
-    private let window: NSWindow
-    private let textView = NSTextView()
-    private let codes: [String]
-
-    static func show(_ result: ScanResult, copied: Bool = true) {
-        let w = ScanResultWindow(result, copied: copied)
-        open.append(w)
-        w.window.centerOnPointerScreen()
-        NSApp.activate(ignoringOtherApps: true)
-        w.window.makeKeyAndOrderFront(nil)
-    }
-
-    private init(_ result: ScanResult, copied: Bool) {
-        codes = result.codes
-        window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 360),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        super.init()
-        window.title = "Recognized Text"
-        window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 360, height: 240)
-        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-
-        var body = ""
-        if !result.codes.isEmpty {
-            body += "QR / barcodes:\n" + result.codes.joined(separator: "\n") + "\n\n"
+extension Scanner {
+    /// The first text recognition after a restart can take many seconds while macOS prepares its recognition model
+    /// (about 25 s on a test Mac), and every scan waits behind it. Reading a small picture now, in the background, means
+    /// the first real capture is quick.
+    @MainActor
+    static func warmUp() {
+        let size = NSSize(width: 260, height: 70)
+        let picture = NSImage(size: size, flipped: false) { rect in
+            NSColor.white.setFill()
+            rect.fill()
+            ("Tack reads text" as NSString).draw(
+                at: NSPoint(x: 12, y: 18),
+                withAttributes: [.font: NSFont.systemFont(ofSize: 28), .foregroundColor: NSColor.black]
+            )
+            return true
         }
-        body += result.text.isEmpty ? (result.codes.isEmpty ? "No text or codes were found in this selection." : "") : result.text
-        textView.string = body
-        textView.font = .systemFont(ofSize: 14)
-        textView.isEditable = true
-        textView.textContainerInset = NSSize(width: 8, height: 8)
-        textView.autoresizingMask = [.width]
-
-        let scroll = NSScrollView()
-        scroll.documentView = textView
-        scroll.hasVerticalScroller = true
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-
-        let copy = NSButton(title: "Copy All", target: self, action: #selector(copyAll))
-        copy.bezelStyle = .rounded
-        var buttons: [NSView] = [copy]
-        if let first = result.codes.first, let url = URL(string: first), url.scheme?.hasPrefix("http") == true {
-            let open = NSButton(title: "Open Link", target: self, action: #selector(openLink))
-            open.bezelStyle = .rounded
-            buttons.append(open)
-        }
-        let note = NSTextField(labelWithString: (copied && !result.isEmpty) ? "Already copied to the clipboard." : "")
-        note.textColor = .secondaryLabelColor
-        note.font = .systemFont(ofSize: 11)
-        let bar = NSStackView(views: [note] + buttons)
-        bar.spacing = 8
-        bar.translatesAutoresizingMaskIntoConstraints = false
-
-        let root = NSView()
-        root.addSubview(scroll)
-        root.addSubview(bar)
-        NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: root.topAnchor),
-            scroll.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            scroll.bottomAnchor.constraint(equalTo: bar.topAnchor, constant: -8),
-            bar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
-            bar.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
-            bar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -10),
-        ])
-        window.contentView = root
-        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                ScanResultWindow.open.removeAll { $0 === self }
-            }
-        }
-    }
-
-    @objc private func copyAll() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(textView.string, forType: .string)
-    }
-
-    @objc private func openLink() {
-        if let first = codes.first, let url = URL(string: first) { NSWorkspace.shared.open(url) }
+        guard let image = picture.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        Task.detached(priority: .utility) { _ = await scan(image, wantText: true, wantCodes: false) }
     }
 }
 
-
 /// What happens after a scan. A QR code that holds a link (or an email, phone number...) opens straight away,
-/// with no window and nothing copied. Anything else shows the recognized text as before.
+/// with no card and nothing copied. Anything else shows up as a text preview, like a screenshot, with Copy.
 @MainActor
 enum ScanHandler {
     static func handle(_ result: ScanResult) {
@@ -146,13 +74,15 @@ enum ScanHandler {
             }
             return
         }
-        if !result.codes.isEmpty {
-            // A code with plain text or settings (for example Wi-Fi): nothing to open, so just show it. Not copied.
-            ScanResultWindow.show(ScanResult(text: "", codes: result.codes), copied: false)
+        if result.isEmpty {
+            Alerts.show(title: "No text found", message: "Tack did not find any text or QR code in that selection. Try a larger area, or one with clearer text.")
             return
         }
-        if !result.text.isEmpty { Clipboard.copy(text: result.text) }
-        ScanResultWindow.show(result, copied: !result.text.isEmpty)
+        // A code with plain text or settings (for example Wi-Fi) is shown above any other text.
+        var parts: [String] = []
+        if !result.codes.isEmpty { parts.append(result.codes.joined(separator: "\n")) }
+        if !result.text.isEmpty { parts.append(result.text) }
+        QuickAccess.shared.presentText(parts.joined(separator: "\n\n"))
     }
 
     /// Only link-like payloads are opened. Anything that could run code or read local files is refused.

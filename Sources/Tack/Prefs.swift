@@ -12,6 +12,8 @@ enum PrefKey {
     static let fixedHeight = "fixedHeight"
     static let aspectRatio = "aspectRatio"
     static let appearance = "appearance"
+    static let showInDock = "showInDock"
+    static let showMenuBarIcon = "showMenuBarIcon"
     static let lastRegion = "lastRegion"
     // Annotation
     static let annSize = "annSize"
@@ -115,6 +117,8 @@ enum Prefs {
             PrefKey.fixedHeight: 0,
             PrefKey.aspectRatio: "none",
             PrefKey.appearance: "system",
+            PrefKey.showInDock: false,
+            PrefKey.showMenuBarIcon: true,
             PrefKey.annSize: 1,
             PrefKey.annBackground: "none",
             PrefKey.annPadding: 48,
@@ -196,6 +200,10 @@ enum Prefs {
         default: NSApp.appearance = nil
         }
     }
+
+    /// Where Tack shows up. At least one of the two is always on, so there is always something to click.
+    static var showInDock: Bool { defaults.bool(forKey: PrefKey.showInDock) }
+    static var showMenuBarIcon: Bool { defaults.bool(forKey: PrefKey.showMenuBarIcon) || !showInDock }
 
     static func resetAll() {
         // Resetting settings must not forget which questions were already asked.

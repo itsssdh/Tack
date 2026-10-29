@@ -22,6 +22,8 @@ This is only for people who want to change the code or compile Tack themselves. 
 
 The first build creates a private signing certificate (its own keychain file) and reuses it, so macOS keeps your permissions across rebuilds. After the first signed build run `tccutil reset ScreenCapture com.itsssdh.tack` once and allow Tack again.
 
+Opening Tack again (from Launchpad, the Applications folder, Spotlight or the Dock icon) opens its Settings window. Tack started at login stays quiet in the menu bar.
+
 ## Permissions (Settings > General shows the state of each, with a button to open System Settings)
 
 | Permission | Needed for |
@@ -35,7 +37,7 @@ The first build creates a private signing certificate (its own keychain file) an
 |---|---|
 | Capture Area / Fullscreen / Window | ⇧⌘4 / ⇧⌘3 / ⇧⌘5 |
 | Capture Previous Area | ⌃⇧P |
-| Capture Text / QR (OCR) | ⌃⇧T |
+| Capture Text / QR (OCR) | ⇧⌘T |
 | Capture and Pin to Screen | ⌃⇧K |
 | Start / Stop Screen Recording | ⇧⌘6 |
 | Open Annotation Editor | ⌃⇧E |
@@ -44,10 +46,10 @@ The first build creates a private signing certificate (its own keychain file) an
 
 ## What it does
 
-- **After a capture** a preview appears on the main display, in the corner you choose in Settings > Screenshots. Hover it for **Copy** (clipboard only) and **Save** (clipboard + folder), an **X**, a **pin** that keeps it on screen (pinned previews stack above new ones and fold into one group card when the screen is full) and a **pencil** that opens the editor. Clicking anywhere else on it also opens the editor. It stays until you choose.
+- **After a capture** a preview appears on the main display, in the corner you choose in Settings > Screenshots. Hover it for **Copy** (clipboard only) and **Save** (clipboard + folder), an **X**, a **pin** that keeps it on screen (pinned previews stack above new ones and fold into one group card when the screen is full) and a **pencil** that opens the editor. Clicking anywhere else on it also opens the editor. It stays until you choose. **Drag a preview** into another app (a text box, a chat, a mail, a Finder folder) to drop the picture there, like Apple’s screenshot previews: it arrives as an image file, a recording as its file, recognized text as text. The app you drop onto comes to the front, so you can keep typing there. A dropped preview goes away; one you drop nowhere stays. Text only goes where text is accepted.
 - **Editor**: arrow, line, rectangle, filled rectangle, ellipse, pen, highlighter, text, numbered counters, blur, pixelate, redact, spotlight, crop (with aspect ratios), rotate, flip, resize, combine images, saved colors, backgrounds with padding / rounded corners / shadow, drag-out export, Export as PNG / JPEG / TIFF / HEIC. **Redact is a solid opaque black box**; blur and pixelate are marked “not secure”.
 - **Pinned screenshots**: always on top, drag to move, scroll or pinch to resize, right-click for opacity, Lock Mode (clicks pass through; undo from the menu bar) and OCR.
-- **OCR and QR** with Apple’s Vision framework, on a selected area, a preview, or a pin.
+- **OCR and QR** with Apple’s Vision framework, on a selected area (⇧⌘T), a preview, or a pin. Recognized text comes back as a preview card in the same corner, with Copy and Pin. A QR code that holds a link opens it straight away.
 - **History**: everything you save, searchable by name and by text inside screenshots (menu bar > Capture History).
 - **Screen recording** (⇧⌘6): pick an area, window or full screen, then a setup bar lets you switch computer sound, microphone, webcam bubble, cursor, click highlights and MP4 / GIF before pressing Record. A dashed frame shows the recorded area (it is not in the video). Pause/resume and stop from the floating bar, or press ⇧⌘6 again. Click highlights and the webcam bubble are not drawn when recording a single window.
 - **Recordings** come back as a preview in the same corner, playing silently on a loop, with the same Copy / Save, pin, pencil and X buttons. The file is already saved when the recording ends. The pencil opens the video trimmer.

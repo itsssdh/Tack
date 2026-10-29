@@ -60,7 +60,7 @@ final class PinWindow: NSObject {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = true
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
         let view = PinView(frame: NSRect(origin: .zero, size: size))
         view.owner = self
@@ -91,6 +91,8 @@ final class PinWindow: NSObject {
         scale = clamped
         panel.setFrame(frame, display: true)
     }
+
+    func bringToFront() { panel.orderFrontRegardless() }
 
     func setLocked(_ on: Bool) {
         locked = on
@@ -183,6 +185,8 @@ final class PinManager {
     }
 
     func unlockAll() { pins.forEach { $0.setLocked(false) } }
+    /// Puts every pinned screenshot back in front (after a desktop or app switch macOS can leave one hidden).
+    func bringAllToFront() { pins.forEach { $0.bringToFront() } }
     func closeAll() { pins.forEach { $0.close() } }
 
     func showLockHint() {

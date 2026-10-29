@@ -38,7 +38,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable {
         case .captureWindow: return Shortcut(keyCode: 23, modifiers: cmdShift)     // ⇧⌘5
         case .captureFullscreen: return Shortcut(keyCode: 20, modifiers: cmdShift) // ⇧⌘3
         case .capturePrevious: return Shortcut(keyCode: 35, modifiers: ctrlShift)  // P
-        case .captureText: return Shortcut(keyCode: 17, modifiers: ctrlShift)      // T
+        case .captureText: return Shortcut(keyCode: 17, modifiers: cmdShift)       // ⇧⌘T
         case .capturePinned: return Shortcut(keyCode: 40, modifiers: ctrlShift)    // K
         case .recordScreen: return Shortcut(keyCode: 22, modifiers: cmdShift)     // ⇧⌘6
         case .openEditor: return Shortcut(keyCode: 14, modifiers: ctrlShift)       // E
