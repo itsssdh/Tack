@@ -4,38 +4,89 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy – Tack</title>
-<meta name="theme-color" content="#fcefdf">
+<meta name="theme-color" content="#0a0a0d">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-  :root{--bg:#fcefdf;--ink:#241f1d;--muted:#a58f82;--chip:rgba(110,70,40,.08);--accent:#ff8a3a;
-    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  :root{color-scheme:dark;--bg:#0a0a0d;--panel:#121217;--panel2:#17171e;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--ink:#f2f2ee;--muted:#8d8d98;--accent:#c8ff4a;--accent-ink:#0d1500;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
-  a{color:inherit}
-  header{display:flex;align-items:center;padding:16px clamp(16px,3vw,44px)}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:750;font-size:26px;letter-spacing:-.03em;text-decoration:none}
-  .brand img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px -4px rgba(36,31,29,.5)}
-  main{max-width:720px;margin:0 auto;padding:clamp(30px,6vw,80px) 22px 80px}
-  h1{margin:0 0 18px;font-size:clamp(40px,7vw,72px);letter-spacing:-.045em;font-weight:800;line-height:1}
-  p.lead{font-size:20px;line-height:1.5;font-weight:550;color:#6e5e55;margin:0 0 28px}
-  ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
-  li{background:var(--chip);border-radius:20px;padding:18px 22px;font-size:18px;line-height:1.5;font-weight:550;color:#6e5e55}
-  li strong{color:var(--ink);font-weight:750}
-  .back{display:inline-block;margin-top:34px;font-weight:700;color:var(--muted)}
+  html{-webkit-text-size-adjust:100%;background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;position:relative;overflow-x:hidden}
+  body::before{content:"";position:absolute;inset:0 0 auto 0;height:700px;z-index:-1;pointer-events:none;
+    background:radial-gradient(50% 60% at 50% 0%,rgba(200,255,74,.10),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.3px) 0 0/26px 26px;
+    -webkit-mask-image:linear-gradient(#000 30%,transparent);mask-image:linear-gradient(#000 30%,transparent)}
+  a{color:inherit;text-decoration:none}
+  svg{display:block}
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;width:min(900px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:8px 8px 8px 16px;border-radius:999px;background:rgba(18,18,23,.72);border:1px solid var(--line);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:0 14px 40px -14px rgba(0,0,0,.7)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:18px;letter-spacing:-.02em}
+  .brand-home{display:flex;align-items:center;gap:10px}
+  .brand img{width:28px;height:28px;border-radius:8px}
+  .ver{font:600 11.5px/1 var(--mono);color:var(--muted);border:1px solid var(--line2);padding:5px 8px;border-radius:999px;transition:color .2s,border-color .2s}
+  .ver:hover,.ver.here{color:var(--accent);border-color:var(--accent)}
+  .nav-r{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px}
+  .nav-r .lnk{padding:9px 14px;border-radius:999px;color:#c9c9d1;transition:background .2s,color .2s}
+  .nav-r .lnk:hover{background:rgba(255,255,255,.07);color:#fff}
+  .pillbtn{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:999px;font-weight:750;transition:transform .2s,box-shadow .2s}
+  .pillbtn:hover{transform:translateY(-1px);box-shadow:0 10px 30px -8px rgba(200,255,74,.6)}
+  .pillbtn svg{width:17px;height:17px}
+  @media(max-width:640px){.nav-r .lnk{display:none}}
+  main{max-width:900px;margin:0 auto;padding:clamp(120px,13vw,170px) clamp(18px,3vw,40px) 40px}
+  h1{margin:16px 0 0;font-size:clamp(44px,7vw,92px);line-height:.98;font-weight:800;letter-spacing:-.05em}
+  p.lead{margin:20px 0 0;max-width:34em;font-size:clamp(17px,1.7vw,20px);line-height:1.55;color:var(--muted);font-weight:500}
+  p.lead a,.rows a.u{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+  footer{max-width:1180px;margin:clamp(70px,9vw,120px) auto 0;padding:34px clamp(18px,3vw,40px) 44px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:22px 30px;flex-wrap:wrap}
+  footer .brand{font-size:17px}
+  .flinks{display:flex;gap:6px 22px;flex-wrap:wrap;color:var(--muted);font-weight:600;font-size:14.5px}
+  .flinks a:hover{color:var(--ink)}
+  .support button{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);font:inherit;font-weight:650;font-size:14.5px;color:var(--ink);cursor:pointer;transition:border-color .2s,background .2s}
+  .support button:hover{border-color:#5865f2;background:#5865f21a}
+  .support svg{width:18px;height:18px;color:#7b86ff}
+  .legal{width:100%;color:#62626d;font:500 12.5px/1 var(--mono)}
+
+  .rows{margin-top:48px;border-top:1px solid var(--line)}
+  .row{display:grid;grid-template-columns:200px 1fr;gap:8px 30px;padding:24px 0;border-bottom:1px solid var(--line)}
+  .row b{font-size:18px;letter-spacing:-.015em;font-weight:700}
+  .row span{color:var(--muted);font-size:16.5px;line-height:1.55;font-weight:500}
+  .help{margin-top:36px}
+  @media(max-width:640px){.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><a class="brand" href="index.html"><img src="icon.png" alt="">Tack</a></header>
+<header class="nav">
+  <div class="brand"><a class="brand-home" href="./"><img src="icon.png" alt="">Tack</a><a class="ver" href="changelog.html" title="See what changed">v1.0.2</a></div>
+  <nav class="nav-r">
+    <a class="lnk" href="./#features">Features</a>
+    <a class="lnk" href="./#faq">FAQ</a>
+    <a class="lnk" href="https://github.com/itsssdh/Tack">GitHub</a>
+    <a class="pillbtn" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download</a>
+  </nav>
+</header>
 <main>
-  <h1>Privacy</h1>
-  <p class="lead">Tack has no accounts, no analytics and doesn’t use the network. Your screenshots and recordings stay on your Mac, in the folder you choose. Here is what it asks macOS for:</p>
-  <ul>
-    <li><strong>Screen Recording:</strong> needed to take screenshots and recordings.</li>
-    <li><strong>Camera:</strong> used only when you turn on the webcam bubble for a screen recording.</li>
-    <li><strong>Microphone:</strong> used only when you turn on microphone audio for a screen recording.</li>
-  </ul>
-  <p class="lead" style="margin-top:28px">Questions? Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p>
-  <a class="back" href="index.html">← Back to Tack</a>
+  <div class="eyebrow">Privacy</div>
+  <h1>Your captures stay yours.</h1>
+  <p class="lead">Tack has no accounts and no analytics. The only thing it uses the network for is checking for updates. Your screenshots and recordings stay on your Mac, in the folder you choose. Here is what it asks macOS for:</p>
+  <div class="rows">
+    <div class="row"><b>Screen Recording</b><span>Needed to take screenshots and recordings.</span></div>
+    <div class="row"><b>Camera</b><span>Used only when you turn on the webcam bubble for a screen recording.</span></div>
+    <div class="row"><b>Microphone</b><span>Used only when you turn on microphone audio for a screen recording.</span></div>
+  </div>
+  <p class="lead help">Questions? Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p>
 </main>
+<footer>
+  <a class="brand" href="./"><img src="icon.png" alt="">Tack</a>
+  <nav class="flinks"><a href="https://github.com/itsssdh/Tack">GitHub</a><a href="https://github.com/itsssdh/Tack/issues">Report an issue</a><a href="changelog.html">Changelog</a><a href="privacy.html">Privacy</a></nav>
+  <div class="support"><button type="button" id="discord" title="Copy my Discord username"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a20 20 0 0 0 6 3l1.3-2.1c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a20 20 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Zm7 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Z"/></svg><span id="discordLabel">Support: @its.dh</span></button></div>
+  <div class="legal">© 2026 itsssdh</div>
+</footer>
+<script>
+document.getElementById('discord').addEventListener('click', () => {
+  const label = document.getElementById('discordLabel');
+  const done = () => { label.textContent = 'Copied! Add @its.dh on Discord'; setTimeout(() => label.textContent = 'Support: @its.dh', 2500); };
+  if (navigator.clipboard) navigator.clipboard.writeText('its.dh').then(done, done); else done();
+});
+</script>
 </body>
 </html>

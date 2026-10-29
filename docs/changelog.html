@@ -4,87 +4,107 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Changelog – Tack</title>
-<meta name="description" content="What's new in Tack.">
-<meta name="theme-color" content="#fcefdf">
+<meta name="theme-color" content="#0a0a0d">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>
-  :root{--bg:#fcefdf;--ink:#241f1d;--muted:#a58f82;--chip:rgba(110,70,40,.08);--chip2:rgba(110,70,40,.13);--accent:#ff8a3a;
-    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  :root{color-scheme:dark;--bg:#0a0a0d;--panel:#121217;--panel2:#17171e;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--ink:#f2f2ee;--muted:#8d8d98;--accent:#c8ff4a;--accent-ink:#0d1500;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  html{-webkit-text-size-adjust:100%;background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;position:relative;overflow-x:hidden}
+  body::before{content:"";position:absolute;inset:0 0 auto 0;height:700px;z-index:-1;pointer-events:none;
+    background:radial-gradient(50% 60% at 50% 0%,rgba(200,255,74,.10),transparent 70%),radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.3px) 0 0/26px 26px;
+    -webkit-mask-image:linear-gradient(#000 30%,transparent);mask-image:linear-gradient(#000 30%,transparent)}
   a{color:inherit;text-decoration:none}
-  header{display:flex;align-items:center;justify-content:space-between;padding:16px clamp(16px,3vw,44px)}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:750;font-size:26px;letter-spacing:-.03em}
-  .brand img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px -4px rgba(36,31,29,.5)}
-  .dl{background:var(--chip);padding:12px 20px;border-radius:16px;font-weight:700;font-size:17px;transition:background .2s}
-  .dl:hover{background:var(--chip2)}
-  main{max-width:760px;margin:0 auto;padding:clamp(30px,6vw,80px) 22px 90px}
-  h1{margin:0 0 14px;font-size:clamp(40px,7vw,72px);letter-spacing:-.045em;font-weight:800;line-height:1}
-  p.lead{font-size:20px;line-height:1.5;font-weight:550;color:#6e5e55;margin:0 0 44px}
-  .rel{display:grid;grid-template-columns:150px 1fr;gap:10px 28px;padding:30px 0;border-top:2px solid var(--chip)}
-  .meta{position:sticky;top:20px;align-self:start}
-  .v{display:inline-block;font-weight:800;font-size:20px;letter-spacing:-.02em;background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:999px}
-  .date{margin-top:10px;color:var(--muted);font-weight:650;font-size:15px}
-  .latest{margin-left:8px;font-size:12px;font-weight:800;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;vertical-align:2px}
-  h2{margin:0 0 10px;font-size:24px;letter-spacing:-.03em;font-weight:780}
-  ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
-  li{background:var(--chip);border-radius:18px;padding:15px 20px;font-size:17px;line-height:1.5;font-weight:550;color:#6e5e55}
-  li strong{color:var(--ink);font-weight:750}
-  .dlrow{margin-top:14px}
-  .dlrow a{font-weight:700;color:var(--accent)}
-  .back{display:inline-block;margin-top:20px;font-weight:700;color:var(--muted)}
+  svg{display:block}
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;width:min(900px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:8px 8px 8px 16px;border-radius:999px;background:rgba(18,18,23,.72);border:1px solid var(--line);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:0 14px 40px -14px rgba(0,0,0,.7)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:18px;letter-spacing:-.02em}
+  .brand-home{display:flex;align-items:center;gap:10px}
+  .brand img{width:28px;height:28px;border-radius:8px}
+  .ver{font:600 11.5px/1 var(--mono);color:var(--muted);border:1px solid var(--line2);padding:5px 8px;border-radius:999px;transition:color .2s,border-color .2s}
+  .ver:hover,.ver.here{color:var(--accent);border-color:var(--accent)}
+  .nav-r{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px}
+  .nav-r .lnk{padding:9px 14px;border-radius:999px;color:#c9c9d1;transition:background .2s,color .2s}
+  .nav-r .lnk:hover{background:rgba(255,255,255,.07);color:#fff}
+  .pillbtn{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:999px;font-weight:750;transition:transform .2s,box-shadow .2s}
+  .pillbtn:hover{transform:translateY(-1px);box-shadow:0 10px 30px -8px rgba(200,255,74,.6)}
+  .pillbtn svg{width:17px;height:17px}
+  @media(max-width:640px){.nav-r .lnk{display:none}}
+  main{max-width:900px;margin:0 auto;padding:clamp(120px,13vw,170px) clamp(18px,3vw,40px) 40px}
+  h1{margin:16px 0 0;font-size:clamp(44px,7vw,92px);line-height:.98;font-weight:800;letter-spacing:-.05em}
+  p.lead{margin:20px 0 0;max-width:34em;font-size:clamp(17px,1.7vw,20px);line-height:1.55;color:var(--muted);font-weight:500}
+  p.lead a,.rows a.u{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+  footer{max-width:1180px;margin:clamp(70px,9vw,120px) auto 0;padding:34px clamp(18px,3vw,40px) 44px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:22px 30px;flex-wrap:wrap}
+  footer .brand{font-size:17px}
+  .flinks{display:flex;gap:6px 22px;flex-wrap:wrap;color:var(--muted);font-weight:600;font-size:14.5px}
+  .flinks a:hover{color:var(--ink)}
+  .support button{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);font:inherit;font-weight:650;font-size:14.5px;color:var(--ink);cursor:pointer;transition:border-color .2s,background .2s}
+  .support button:hover{border-color:#5865f2;background:#5865f21a}
+  .support svg{width:18px;height:18px;color:#7b86ff}
+  .legal{width:100%;color:#62626d;font:500 12.5px/1 var(--mono)}
+
+  .rel{display:grid;grid-template-columns:170px 1fr;gap:10px 34px;padding:34px 0;border-top:1px solid var(--line)}
+  .rel:first-of-type{margin-top:54px}
+  .meta{position:sticky;top:100px;align-self:start}
+  .v{display:inline-block;font:700 15px/1 var(--mono);color:var(--ink);border:1px solid var(--line2);background:var(--panel);padding:8px 12px;border-radius:999px}
+  .latest{display:inline-block;margin-left:8px;font:700 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);padding:6px 9px;border-radius:999px;vertical-align:1px}
+  .date{margin-top:12px;color:var(--muted);font:500 12.5px/1 var(--mono);letter-spacing:.02em}
+  .rel h2{margin:0 0 16px;font-size:clamp(24px,3vw,32px);line-height:1.1;letter-spacing:-.035em;font-weight:780}
+  .rel ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+  .rel li{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px 18px;font-size:16.5px;line-height:1.55;font-weight:500;color:#b5b5be}
+  .rel li strong{color:var(--ink);font-weight:700}
+  .tag{display:inline-block;font:700 11px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:6px;margin-right:8px;vertical-align:1px;background:rgba(200,255,74,.12);color:var(--accent)}
+  .gh{display:inline-block;margin-top:16px;font-weight:650;color:var(--muted);transition:color .2s}
+  .gh:hover{color:var(--accent)}
   @media(max-width:640px){.rel{grid-template-columns:1fr}.meta{position:static}}
 </style>
 </head>
 <body>
-<header>
-  <a class="brand" href="./"><img src="icon.png" alt="">Tack</a>
-  <a class="dl" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg">Download</a>
+<header class="nav">
+  <div class="brand"><a class="brand-home" href="./"><img src="icon.png" alt="">Tack</a><a class="ver here" href="changelog.html" title="See what changed">v1.0.2</a></div>
+  <nav class="nav-r">
+    <a class="lnk" href="./#features">Features</a>
+    <a class="lnk" href="./#faq">FAQ</a>
+    <a class="lnk" href="https://github.com/itsssdh/Tack">GitHub</a>
+    <a class="pillbtn" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download</a>
+  </nav>
 </header>
 <main>
-  <h1>Changelog</h1>
-  <p class="lead">What's new in Tack.</p>
-
+  <div class="eyebrow">Changelog</div>
+  <h1>What’s new.</h1>
+  <p class="lead">Every version of Tack, newest first. Tack updates itself, so you’ll get these automatically.</p>
   <section class="rel" id="v1.0.2">
     <div class="meta"><span class="v">v1.0.2</span><span class="latest">Latest</span><div class="date">October 28, 2026</div></div>
-    <div>
-      <h2>Tack updates itself</h2>
-      <ul>
-        <li><strong>New:</strong> Tack checks for new versions in the background and installs them for you. No more downloading and dragging the app in again.</li>
-        <li><strong>New:</strong> “Check for Updates…” in the menu bar menu, and an “Install updates automatically” switch in Settings &gt; General.</li>
-        <li>This is the last version you need to install by hand.</li>
-      </ul>
-      <div class="dlrow"><a href="https://github.com/itsssdh/Tack/releases/tag/v1.0.2">Release notes on GitHub →</a></div>
-    </div>
+    <div><h2>Tack updates itself</h2><ul><li><span class="tag">New</span>Tack checks for new versions in the background and installs them for you. No more downloading and dragging the app in again.</li><li><span class="tag">New</span>An “Install updates automatically” switch and a Check Now button in Settings &gt; General.</li><li>This is the last version you need to install by hand.</li></ul>
+      <a class="gh" href="https://github.com/itsssdh/Tack/releases/tag/v1.0.2">Release notes on GitHub →</a></div>
   </section>
-
   <section class="rel" id="v1.0.1">
     <div class="meta"><span class="v">v1.0.1</span><div class="date">October 28, 2026</div></div>
-    <div>
-      <h2>Close prompt works over full-screen apps</h2>
-      <ul>
-        <li><strong>Fixed:</strong> pressing X in the photo editor while a full-screen app is in front now shows the “Discard this screenshot?” confirmation on the editor itself, instead of somewhere you can't see it.</li>
-      </ul>
-      <div class="dlrow"><a href="https://github.com/itsssdh/Tack/releases/tag/v1.0.1">Release notes on GitHub →</a></div>
-    </div>
+    <div><h2>Close prompt works over full-screen apps</h2><ul><li><span class="tag">Fixed</span>Pressing X in the photo editor while a full-screen app is in front now shows the “Discard this screenshot?” confirmation on the editor itself, instead of somewhere you can’t see it.</li></ul>
+      <a class="gh" href="https://github.com/itsssdh/Tack/releases/tag/v1.0.1">Release notes on GitHub →</a></div>
   </section>
-
   <section class="rel" id="v1.0.0">
     <div class="meta"><span class="v">v1.0.0</span><div class="date">October 28, 2026</div></div>
-    <div>
-      <h2>First public release</h2>
-      <ul>
-        <li><strong>Capture</strong> an area, a window or the whole screen, with previews you can copy, save or pin.</li>
-        <li><strong>Mark up</strong> screenshots with pen, highlighter, shapes, text and blur in a built-in editor.</li>
-        <li><strong>Record</strong> your screen, trim it in the video editor and export as MP4 or GIF.</li>
-        <li><strong>Copy text</strong> straight from anywhere on the screen.</li>
-        <li><strong>Free and open source.</strong> No account, no license, no tracking. Launches at login by default.</li>
-      </ul>
-      <div class="dlrow"><a href="https://github.com/itsssdh/Tack/releases/tag/1.0.0">Release notes on GitHub →</a></div>
-    </div>
+    <div><h2>First public release</h2><ul><li><strong>Capture</strong> an area, a window or the whole screen, with previews you can copy, save or pin.</li><li><strong>Mark up</strong> screenshots with pen, highlighter, shapes, text and blur in a built-in editor.</li><li><strong>Record</strong> your screen, trim it in the video editor and export as MP4 or GIF.</li><li><strong>Copy text</strong> straight from anywhere on the screen.</li><li><strong>Free and open source.</strong> No account, no license, no tracking. Launches at login by default.</li></ul>
+      <a class="gh" href="https://github.com/itsssdh/Tack/releases/tag/1.0.0">Release notes on GitHub →</a></div>
   </section>
 
-  <a class="back" href="./">← Back to Tack</a>
 </main>
+<footer>
+  <a class="brand" href="./"><img src="icon.png" alt="">Tack</a>
+  <nav class="flinks"><a href="https://github.com/itsssdh/Tack">GitHub</a><a href="https://github.com/itsssdh/Tack/issues">Report an issue</a><a href="changelog.html">Changelog</a><a href="privacy.html">Privacy</a></nav>
+  <div class="support"><button type="button" id="discord" title="Copy my Discord username"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a20 20 0 0 0 6 3l1.3-2.1c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a20 20 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Zm7 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Z"/></svg><span id="discordLabel">Support: @its.dh</span></button></div>
+  <div class="legal">© 2026 itsssdh</div>
+</footer>
+<script>
+document.getElementById('discord').addEventListener('click', () => {
+  const label = document.getElementById('discordLabel');
+  const done = () => { label.textContent = 'Copied! Add @its.dh on Discord'; setTimeout(() => label.textContent = 'Support: @its.dh', 2500); };
+  if (navigator.clipboard) navigator.clipboard.writeText('its.dh').then(done, done); else done();
+});
+</script>
 </body>
 </html>

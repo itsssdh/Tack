@@ -8,66 +8,74 @@
 <meta property="og:title" content="Tack – Screenshots and screen recording for Mac">
 <meta property="og:description" content="Free, open source, native. Capture, mark up and record on your Mac.">
 <meta property="og:image" content="icon.png">
-<meta name="theme-color" content="#fcefdf">
+<meta name="theme-color" content="#0a0a0d">
 <link rel="icon" type="image/png" href="favicon.png">
 <script>document.documentElement.classList.add('js','intro')</script>
 <style>
   :root{
-    --bg:#fcefdf; --ink:#241f1d; --muted:#a58f82; --chip:rgba(110,70,40,.08); --chip2:rgba(110,70,40,.13);
-    --accent:#ff8a3a; --mark:#ffcdac; --blue:#5b6cff;
+    color-scheme:dark;
+    --bg:#0a0a0d; --panel:#121217; --panel2:#17171e; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+    --ink:#f2f2ee; --muted:#8d8d98; --accent:#c8ff4a; --accent-ink:#0d1500; --violet:#8f82ff;
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:hidden;-webkit-font-smoothing:antialiased;position:relative}
+  body::before{content:"";position:absolute;inset:0 0 auto 0;height:900px;z-index:-1;pointer-events:none;
+    background:radial-gradient(50% 60% at 50% 0%,rgba(200,255,74,.10),transparent 70%),
+      radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.3px) 0 0/26px 26px;
+    -webkit-mask-image:linear-gradient(#000 30%,transparent);mask-image:linear-gradient(#000 30%,transparent)}
   a{color:inherit;text-decoration:none}
   button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
   svg{display:block}
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 
-  /* ---------- nav ---------- */
-  .nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
-    padding:16px clamp(16px,3vw,44px);background:rgba(252,239,223,.72);
-    -webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5)}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:750;font-size:26px;letter-spacing:-.03em}
-  .brand-home{display:flex;align-items:center;gap:12px}
-  .ver{font-size:14px;font-weight:700;letter-spacing:0;color:#8a6f5f;background:var(--chip);padding:5px 11px;border-radius:999px;transition:background .2s,color .2s}
-  .ver:hover{background:var(--chip2);color:var(--ink)}
-  .brand img{width:42px;height:42px;border-radius:12px;box-shadow:0 4px 14px -4px rgba(36,31,29,.5)}
-  .nav-r{display:flex;align-items:center;gap:clamp(14px,2.4vw,36px);font-weight:700;font-size:19px;letter-spacing:-.01em}
-  .nav-r a.lnk{display:flex;align-items:center;gap:10px}
-  .nav-r svg.i{width:24px;height:24px}
-  .pillbtn{display:flex;align-items:center;gap:10px;background:var(--chip);padding:14px 22px;border-radius:18px;transition:background .2s}
-  .pillbtn:hover{background:var(--chip2)}
-  .pillbtn svg{width:22px;height:22px}
-  @media(max-width:760px){.nav-r a.lnk{display:none}.pillbtn{padding:11px 16px;font-size:16px}.brand{font-size:22px}}
+  /* ---------- floating nav ---------- */
+  .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;width:min(900px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:8px 8px 8px 16px;border-radius:999px;background:rgba(18,18,23,.72);border:1px solid var(--line);
+    -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:0 14px 40px -14px rgba(0,0,0,.7)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:18px;letter-spacing:-.02em}
+  .brand-home{display:flex;align-items:center;gap:10px}
+  .brand img{width:28px;height:28px;border-radius:8px}
+  .ver{font:600 11.5px/1 var(--mono);color:var(--muted);border:1px solid var(--line2);padding:5px 8px;border-radius:999px;transition:color .2s,border-color .2s}
+  .ver:hover{color:var(--accent);border-color:var(--accent)}
+  .nav-r{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px}
+  .nav-r .lnk{padding:9px 14px;border-radius:999px;color:#c9c9d1;transition:background .2s,color .2s}
+  .nav-r .lnk:hover{background:rgba(255,255,255,.07);color:#fff}
+  .pillbtn{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:999px;font-weight:750;transition:transform .2s,box-shadow .2s}
+  .pillbtn:hover{transform:translateY(-1px);box-shadow:0 10px 30px -8px rgba(200,255,74,.6)}
+  .pillbtn svg{width:17px;height:17px}
+  @media(max-width:640px){.nav-r .lnk{display:none}}
 
   /* ---------- hero ---------- */
-  .hero{text-align:center;padding:clamp(44px,6.5vw,92px) 20px 0}
+  .hero{text-align:center;padding:clamp(120px,13vw,170px) clamp(14px,3vw,40px) 0}
   h1{margin:0;font-size:clamp(40px,6.9vw,112px);line-height:.98;font-weight:800;letter-spacing:-.048em}
-  .hl{background:linear-gradient(transparent 50%,var(--mark) 50%,var(--mark) 93%,transparent 93%);padding:0 .08em;border-radius:6px;white-space:nowrap}
-  .cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:clamp(30px,4vw,54px)}
+  .hl{display:inline-block;background:var(--accent);color:var(--accent-ink);padding:0 .12em .04em;border-radius:.14em;white-space:nowrap}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:clamp(30px,4vw,52px)}
   .btn{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,2vw,24px);font-weight:700;letter-spacing:-.015em;
-    padding:clamp(16px,1.8vw,22px) clamp(22px,2.4vw,32px);border-radius:22px;transition:transform .2s,box-shadow .2s,background .2s}
+    padding:clamp(16px,1.8vw,22px) clamp(22px,2.4vw,32px);border-radius:22px;transition:transform .2s,box-shadow .2s,background .2s,border-color .2s}
   .btn svg{width:26px;height:26px}
-  .btn.dark{background:var(--ink);color:#fff;box-shadow:0 22px 34px -14px rgba(36,31,29,.55)}
-  .btn.dark:hover{transform:translateY(-2px);box-shadow:0 28px 40px -14px rgba(36,31,29,.6)}
-  .btn.soft{background:var(--chip)}
-  .btn.soft:hover{background:var(--chip2)}
-  .badge{background:var(--ink);color:#fff;border-radius:10px;padding:3px 11px;font-size:.78em}
+  .btn.dark{background:var(--accent);color:var(--accent-ink);box-shadow:0 22px 44px -16px rgba(200,255,74,.55)}
+  .btn.dark:hover{transform:translateY(-2px);box-shadow:0 28px 50px -14px rgba(200,255,74,.7)}
+  .btn.soft{background:var(--panel2);border:1px solid var(--line2)}
+  .btn.soft:hover{border-color:#fff3;background:#1d1d26}
+  .badge{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:3px 11px;font-size:.78em;font-weight:750}
 
   /* ---------- interactive demo ---------- */
   .demo{padding:clamp(34px,5vw,70px) clamp(14px,3vw,40px) 0}
-  .stage{position:relative;width:min(1180px,100%);margin:0 auto;aspect-ratio:16/10;border-radius:clamp(22px,3vw,38px);overflow:hidden;
-    box-shadow:0 50px 90px -34px rgba(70,30,100,.55);user-select:none;-webkit-user-select:none;touch-action:none;isolation:isolate;container-type:size}
+  .stage{position:relative;width:min(1180px,100%);margin:0 auto;aspect-ratio:16/10;border-radius:clamp(18px,2.4vw,28px);overflow:hidden;border:1px solid var(--line);
+    box-shadow:0 0 0 1px rgba(255,255,255,.03),0 60px 120px -40px rgba(200,255,74,.22),0 40px 80px -30px rgba(0,0,0,.8);user-select:none;-webkit-user-select:none;touch-action:none;isolation:isolate;container-type:size}
   .scene{position:absolute;inset:0;container-type:size;overflow:hidden;
     background:
-      radial-gradient(70% 60% at 12% 0%,#7a5cff 0,transparent 60%),
-      radial-gradient(60% 60% at 100% 18%,#ff7d8e 0,transparent 62%),
-      radial-gradient(80% 70% at 62% 112%,#ffb25e 0,transparent 62%),
-      linear-gradient(160deg,#27277a,#58297b 55%,#8d3b6a)}
+      radial-gradient(60% 55% at 88% 0%,rgba(200,255,74,.42) 0,transparent 62%),
+      radial-gradient(70% 60% at 0% 100%,rgba(120,100,255,.55) 0,transparent 64%),
+      radial-gradient(50% 40% at 50% 120%,rgba(40,220,170,.35) 0,transparent 70%),
+      linear-gradient(160deg,#0d1020,#141a36 55%,#0f2420)}
   .scene::before,.scene::after{content:"";position:absolute;z-index:0;border-radius:50%;opacity:.55}
-  .scene::before{width:90cqw;height:90cqw;left:-30cqw;bottom:-62cqw;background:linear-gradient(140deg,#3a2f9a,#6a2f8a)}
-  .scene::after{width:80cqw;height:80cqw;right:-22cqw;bottom:-56cqw;background:linear-gradient(200deg,#d95f86,#7a3a8a)}
+  .scene::before{width:90cqw;height:90cqw;left:-30cqw;bottom:-62cqw;background:linear-gradient(140deg,#2a2a7a,#1a1f55)}
+  .scene::after{width:80cqw;height:80cqw;right:-22cqw;bottom:-56cqw;background:linear-gradient(200deg,#1f6a55,#1a2f55)}
   .win{position:absolute;z-index:1;background:rgba(255,255,255,.95);border-radius:1.4cqw;box-shadow:0 2.4cqw 5cqw -1cqw rgba(20,10,50,.55);overflow:hidden;color:#2a2530;font-size:1.25cqw}
   .win .bar{height:3.1cqw;display:flex;align-items:center;gap:.6cqw;padding:0 1.2cqw;background:rgba(0,0,0,.04)}
   .win .bar i{width:1cqw;height:1cqw;border-radius:50%;background:#ff5f57}
@@ -78,8 +86,8 @@
   .winA h4{margin:0 0 .5cqw;font-size:2.5cqw;letter-spacing:-.02em}
   .winA p{margin:0 0 1.6cqw;color:#8b8394;font-size:1.3cqw}
   .chart{display:flex;align-items:flex-end;gap:1.3cqw;height:14cqw;padding:1.4cqw 1.6cqw 0;background:linear-gradient(#f6f2fb,#efe8fa);border-radius:1cqw}
-  .chart span{flex:1;border-radius:.7cqw .7cqw 0 0;background:linear-gradient(#ff9a52,#ff7a1f)}
-  .chart span:nth-child(even){background:linear-gradient(#8a7bff,#5b6cff)}
+  .chart span{flex:1;border-radius:.7cqw .7cqw 0 0;background:linear-gradient(#d6ff6a,#9be02a)}
+  .chart span:nth-child(even){background:linear-gradient(#9a8cff,#6a5cff)}
   .lines{margin-top:1.8cqw;display:grid;gap:.9cqw}
   .lines i{display:block;height:1cqw;border-radius:1cqw;background:#e9e4ee}
   .winB{left:52%;top:30%;width:39%;height:48%}
@@ -109,7 +117,7 @@
     color:#fff;font-size:14px;font-weight:550;box-shadow:0 20px 50px -10px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);display:none}
   .tmenu.open{display:block}
   .tmenu button{display:flex;width:100%;justify-content:space-between;gap:24px;padding:7px 10px;border-radius:7px;text-align:left}
-  .tmenu button:hover{background:#3b7bff}
+  .tmenu button:hover{background:var(--accent);color:var(--accent-ink)}
   .tmenu button em{font-style:normal;opacity:.55}
   .tmenu hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:5px 4px}
 
@@ -119,7 +127,7 @@
   .sel .box{position:absolute;border:2px solid #fff;border-radius:2px;box-shadow:0 0 0 9999px rgba(12,8,34,.42);display:none}
   .sel .size{position:absolute;left:0;top:100%;margin-top:8px;padding:3px 9px;border-radius:8px;background:rgba(20,14,42,.85);color:#fff;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
   .sel .hint{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 16px);transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:rgba(20,14,42,.85);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none}
-  .winhl{position:absolute;border:3px solid #3b7bff;background:rgba(59,123,255,.18);border-radius:1.4cqw;display:none;pointer-events:none}
+  .winhl{position:absolute;border:3px solid var(--accent);background:rgba(200,255,74,.16);border-radius:1.4cqw;display:none;pointer-events:none}
   .sel[data-mode="window"] .dim{background:rgba(12,8,34,.18)}
 
   .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30}
@@ -152,11 +160,11 @@
   @media(hover:none){.thumb .acts{opacity:1}}
   .acts .pair{display:flex;gap:8px}
   .acts .tx{background:#fff;color:#241f1d;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
-  .acts .tx:hover{background:#ffe3cf}
+  .acts .tx:hover{background:var(--accent)}
   .acts .ic{position:absolute;top:7px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);color:#241f1d}
   .acts .ic svg{width:14px;height:14px}
   .acts .x{right:7px}.acts .pin{left:7px}.acts .pen{left:39px}
-  .card.pinned .pin{background:var(--accent);color:#fff}
+  .card.pinned .pin{background:var(--accent);color:var(--accent-ink)}
   .card.annotated .pen{background:#ff453a;color:#fff}
   .ann{position:absolute;inset:6%;width:88%;height:88%;pointer-events:none}
   .ann ellipse{fill:none;stroke:#ff453a;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s .05s ease-out forwards}
@@ -169,75 +177,98 @@
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
   @media(max-width:700px){.stage{aspect-ratio:5/4}.chip-cta{font-size:13.5px;padding:10px 16px 10px 13px;bottom:16px}.chip-cta kbd{display:none}.previews{right:10px;bottom:10px}.recbar{bottom:14px}}
-  .psst{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:26px;padding:0 16px;text-align:center;color:var(--muted);font-weight:700;font-size:16px}
+  .psst{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:22px;padding:0 16px;text-align:center;color:var(--muted);font:600 13px/1.4 var(--mono);letter-spacing:.02em}
   .psst svg{width:16px;height:16px;flex:none}
 
-  /* ---------- features ---------- */
-  .features{padding:clamp(60px,9vw,130px) clamp(18px,4vw,60px) 0}
-  .fgrid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(40px,5vw,72px) clamp(16px,3vw,44px);text-align:center}
-  .feat svg.ico{width:clamp(52px,5.4vw,70px);height:clamp(52px,5.4vw,70px);margin:0 auto 20px}
-  .feat h3{margin:0;font-size:clamp(21px,2.4vw,32px);line-height:1.1;font-weight:760;letter-spacing:-.03em}
-  .feat p{margin:12px auto 0;max-width:230px;color:var(--muted);font-weight:600;font-size:clamp(14px,1.3vw,17px);line-height:1.4}
-  .scribble{position:relative;display:inline-block;padding:0 .14em;margin-left:.04em}
-  .scribble svg{position:absolute;left:-12%;top:-14%;width:124%;height:128%;pointer-events:none;overflow:visible}
-  .scribble path{fill:none;stroke:var(--blue);stroke-width:3.2;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1}
-  .scribble.in path{animation:draw 1s ease-out forwards}
-  @media(max-width:900px){.fgrid{grid-template-columns:repeat(2,1fr)}}
 
-  /* ---------- download + faq ---------- */
-  .final{text-align:center;padding:clamp(70px,10vw,140px) 20px 0}
-  .final .note{margin-top:22px;display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:700;font-size:16px}
-  .faq{max-width:760px;margin:clamp(70px,9vw,120px) auto 0;padding:0 20px}
-  .faq h2{margin:0 0 26px;text-align:center;font-size:clamp(34px,4.4vw,56px);letter-spacing:-.04em;font-weight:800}
-  details{background:var(--chip);border-radius:20px;padding:20px 24px;margin-bottom:12px}
-  summary{cursor:pointer;font-weight:720;font-size:19px;letter-spacing:-.015em;list-style:none;display:flex;justify-content:space-between;gap:20px}
+  .demo{padding-top:clamp(44px,6vw,80px)}
+
+  /* ---------- features (bento) ---------- */
+  .features{scroll-margin-top:0;max-width:1180px;margin:0 auto;padding:clamp(80px,10vw,140px) clamp(14px,3vw,40px) 0}
+  .sec-head{margin:0 0 34px;padding:0 4px}
+  .sec-head h2{margin:14px 0 0;font-size:clamp(32px,4.6vw,58px);line-height:1;letter-spacing:-.045em;font-weight:800;max-width:14ch}
+  .bento{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .feat{position:relative;overflow:hidden;min-height:230px;display:flex;flex-direction:column;padding:26px;border-radius:22px;background:var(--panel);border:1px solid var(--line);isolation:isolate;transition:border-color .25s}
+  .feat::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .3s;
+    background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%),rgba(200,255,74,.13),transparent 65%)}
+  .feat:hover{border-color:rgba(200,255,74,.38)}
+  .feat:hover::before{opacity:1}
+  .feat.w2{grid-column:span 2}
+  .feat svg.ico{width:46px;height:46px;padding:11px;border-radius:14px;background:rgba(200,255,74,.10);color:var(--accent);margin-bottom:44px;flex:none;border:1px solid rgba(200,255,74,.18)}
+  .feat h3{margin:0;font-size:clamp(20px,2vw,25px);line-height:1.12;font-weight:750;letter-spacing:-.03em}
+  .feat p{margin:9px 0 0;color:var(--muted);font-weight:500;font-size:15.5px;line-height:1.5;max-width:30em}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .chips kbd,.chips span{font:600 12.5px/1 var(--mono);padding:8px 11px;border-radius:9px;background:var(--panel2);border:1px solid var(--line2);color:#d6d6de}
+  .chips kbd{box-shadow:0 2px 0 rgba(255,255,255,.08)}
+  .wave{display:flex;align-items:center;gap:5px;height:44px;margin-top:20px}
+  .wave i{flex:0 0 7px;height:var(--h);border-radius:4px;background:linear-gradient(var(--accent),#6fb21a);opacity:.9;animation:beat 1.4s var(--d) ease-in-out infinite alternate}
+  @keyframes beat{to{transform:scaleY(.45)}}
+  @media(max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}.feat{min-height:200px}}
+  @media(max-width:560px){.bento{grid-template-columns:1fr}.feat.w2{grid-column:auto}}
+
+  /* ---------- download panel ---------- */
+  .final{max-width:1180px;margin:clamp(80px,10vw,140px) auto 0;padding:0 clamp(14px,3vw,40px)}
+  .panel{position:relative;overflow:hidden;border-radius:28px;border:1px solid var(--line2);padding:clamp(34px,6vw,80px);text-align:center;
+    background:radial-gradient(60% 120% at 50% 120%,rgba(200,255,74,.22),transparent 70%),var(--panel)}
+  .panel h2{margin:0;font-size:clamp(34px,5.4vw,70px);line-height:1;letter-spacing:-.05em;font-weight:800}
+  .panel p.l{margin:16px auto 28px;max-width:28em;color:var(--muted);font-size:18px;line-height:1.5}
+  .final .note{display:block;margin-top:22px;color:var(--muted);font:500 12.5px/1 var(--mono);letter-spacing:.04em}
+
+  /* ---------- faq ---------- */
+  .faq{scroll-margin-top:90px;max-width:1180px;margin:clamp(80px,10vw,140px) auto 0;padding:0 clamp(18px,3vw,40px);display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:clamp(24px,6vw,90px)}
+  .faq-head{position:sticky;top:96px;align-self:start}
+  .faq-head h2{margin:14px 0 14px;font-size:clamp(34px,4.6vw,58px);line-height:1;letter-spacing:-.045em;font-weight:800}
+  .faq-head p{margin:0;color:var(--muted);line-height:1.55;max-width:20em}
+  details{border-top:1px solid var(--line);padding:22px 4px}
+  details:last-child{border-bottom:1px solid var(--line)}
+  summary{cursor:pointer;font-weight:650;font-size:18.5px;letter-spacing:-.015em;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";font-size:26px;line-height:.8;color:var(--accent);font-weight:600}
-  details[open] summary::after{content:"–"}
-  details p{margin:14px 0 0;color:#6e5e55;font-weight:550;line-height:1.55;font-size:17px}
-  details a{text-decoration:underline;text-underline-offset:3px}
+  summary::after{content:"+";flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);color:var(--accent);font:500 20px/1 var(--font);transition:transform .3s,background .2s}
+  summary:hover::after{background:rgba(200,255,74,.12)}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{margin:14px 0 0;color:var(--muted);font-weight:500;line-height:1.6;font-size:16.5px;max-width:40em}
+  details p strong{color:var(--ink);font-weight:650}
+  details a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+  @media(max-width:860px){.faq{grid-template-columns:1fr}.faq-head{position:static}}
 
   /* ---------- footer ---------- */
-  footer{margin-top:clamp(70px,9vw,120px);text-align:center;position:relative;overflow:hidden}
-  .support{position:relative;z-index:2;margin:0 auto 26px;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 32px);flex-wrap:wrap;justify-content:center;color:#8b6f60;font-weight:650;font-size:17px}
-  .support button{display:flex;align-items:center;gap:9px;background:var(--chip);padding:11px 18px;border-radius:999px;font-weight:750;color:var(--ink);transition:background .2s}
-  .support button:hover{background:var(--chip2)}
-  .support svg{width:20px;height:20px;color:#5865f2}
-  .social{display:flex;gap:12px;justify-content:center;position:relative;z-index:2}
-  .social a{display:grid;place-items:center;width:58px;height:58px;border-radius:17px;background:var(--chip);color:#8b6f60;transition:background .2s}
-  .social a:hover{background:var(--chip2)}
-  .social svg{width:26px;height:26px}
-  .legal{position:relative;z-index:2;margin-top:22px;color:var(--muted);font-weight:650;font-size:15px}
-  .legal a{text-decoration:underline;text-underline-offset:3px}
-  .word{font-size:clamp(170px,36vw,560px);font-weight:900;letter-spacing:-.07em;line-height:.78;color:rgba(120,80,50,.085);margin-top:-.02em;margin-bottom:-.2em;user-select:none;pointer-events:none}
-
+  footer{max-width:1180px;margin:clamp(90px,10vw,140px) auto 0;padding:34px clamp(18px,3vw,40px) 44px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:22px 30px;flex-wrap:wrap}
+  footer .brand{font-size:17px}
+  .flinks{display:flex;gap:6px 22px;flex-wrap:wrap;color:var(--muted);font-weight:600;font-size:14.5px}
+  .flinks a:hover{color:var(--ink)}
+  .support button{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);font-weight:650;font-size:14.5px;color:var(--ink);transition:border-color .2s,background .2s}
+  .support button:hover{border-color:#5865f2;background:#5865f21a}
+  .support svg{width:18px;height:18px;color:#7b86ff}
+  .legal{width:100%;color:#62626d;font:500 12.5px/1 var(--mono)}
 
   /* ---------- launch animations (only while html.intro is set; the end state is the normal style) ---------- */
   .w{display:inline-block}
-  @keyframes rise{from{opacity:0;transform:translateY(.5em) scale(.95);filter:blur(14px)}to{opacity:1;transform:none;filter:blur(0)}}
-  @keyframes drop{from{opacity:0;transform:translateY(-26px)}to{opacity:1;transform:none}}
-  @keyframes pop{from{opacity:0;transform:translateY(26px) scale(.9)}to{opacity:1;transform:none}}
-  @keyframes stageIn{from{opacity:0;transform:translateY(90px) scale(.93)}to{opacity:1;transform:none}}
+  @keyframes rise{from{opacity:0;transform:translateY(.45em) scale(.96);filter:blur(14px)}to{opacity:1;transform:none;filter:blur(0)}}
+  @keyframes drop{from{opacity:0;transform:translateX(-50%) translateY(-26px)}to{opacity:1;transform:translateX(-50%)}}
+  @keyframes drop2{from{opacity:0;transform:translateY(-26px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:translateY(26px) scale(.92)}to{opacity:1;transform:none}}
+  @keyframes stageIn{from{opacity:0;transform:translateY(90px) scale(.94)}to{opacity:1;transform:none}}
   @keyframes winIn{from{opacity:0;transform:translateY(36px) scale(.9)}to{opacity:1;transform:none}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   @keyframes chipIn{from{opacity:0;transform:translateX(-50%) translateY(18px) scale(.94)}to{opacity:1;transform:translateX(-50%)}}
-  @keyframes hlSweep{from{background-size:0% 100%}to{background-size:100% 100%}}
   @keyframes ring{0%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}100%{box-shadow:0 0 0 22px rgba(255,255,255,0)}}
+  @keyframes hlSweep{from{background-size:0% 100%}to{background-size:100% 100%}}
+  @keyframes glow{from{text-shadow:0 0 0 rgba(200,255,74,0)}to{text-shadow:0 0 40px rgba(200,255,74,.45)}}
   html.intro .nav{animation:drop .8s .05s cubic-bezier(.2,.9,.2,1) both}
-  html.intro .w{animation:rise 1s calc(.15s + var(--i) * .1s) cubic-bezier(.2,.9,.2,1) both}
+  html.intro .w{animation:rise 1s calc(.2s + var(--i) * .1s) cubic-bezier(.2,.9,.2,1) both}
   html.intro .hl{background-repeat:no-repeat;background-size:0% 100%;animation:hlSweep .8s 1s cubic-bezier(.2,.9,.2,1) forwards}
-  html.intro .cta-row .btn{animation:pop .9s calc(.85s + var(--i) * .12s) cubic-bezier(.2,.9,.2,1) both}
-  html.intro .stage{animation:stageIn 1.3s .7s cubic-bezier(.16,.9,.2,1) both}
-  html.intro .menubar{animation:drop .7s 1.55s cubic-bezier(.2,.9,.2,1) both}
-  html.intro .winA{animation:winIn .9s 1.4s cubic-bezier(.2,.9,.2,1) both}
-  html.intro .winB{animation:winIn .9s 1.65s cubic-bezier(.2,.9,.2,1) both}
+    html.intro .cta-row .btn{animation:pop .9s calc(.85s + var(--i) * .12s) cubic-bezier(.2,.9,.2,1) both}
+  html.intro .stage{animation:stageIn 1.3s .8s cubic-bezier(.16,.9,.2,1) both}
+  html.intro .menubar{animation:drop2 .7s 1.6s cubic-bezier(.2,.9,.2,1) both}
+  html.intro .winA{animation:winIn .9s 1.45s cubic-bezier(.2,.9,.2,1) both}
+  html.intro .winB{animation:winIn .9s 1.7s cubic-bezier(.2,.9,.2,1) both}
   html.intro .chip-cta{animation:chipIn .8s 2.1s cubic-bezier(.2,.9,.2,1) both}
   html.intro .psst{animation:fadeUp .8s 2.3s ease both}
   .chip-cta{animation:ring 1.8s 3.9s 2 ease-out}
-  html.js .reveal{opacity:0;transform:translateY(36px);transition:opacity .9s var(--d,0s) cubic-bezier(.2,.9,.2,1),transform .9s var(--d,0s) cubic-bezier(.2,.9,.2,1)}
+  html.js .reveal{opacity:0;transform:translateY(32px);transition:opacity .9s var(--d,0s) cubic-bezier(.2,.9,.2,1),transform .9s var(--d,0s) cubic-bezier(.2,.9,.2,1)}
   html.js .reveal.in{opacity:1;transform:none}
 
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ann ellipse,.scribble path{stroke-dashoffset:0}html.js .reveal{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ann ellipse{stroke-dashoffset:0}html.js .reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -245,9 +276,10 @@
 <header class="nav">
   <div class="brand"><a class="brand-home" href="./"><img src="icon.png" alt="">Tack</a><a class="ver" href="changelog.html" title="See what changed">v1.0.2</a></div>
   <nav class="nav-r">
-    <a class="lnk" href="#faq"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4.5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 4v1.8h10V8Zm0 3.6v1.8h6.5v-1.8Z"/></svg>FAQs</a>
-    <a class="lnk" href="https://github.com/itsssdh/Tack"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>GitHub</a>
-    <a class="pillbtn" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
+    <a class="lnk" href="#features">Features</a>
+    <a class="lnk" href="#faq">FAQ</a>
+    <a class="lnk" href="https://github.com/itsssdh/Tack">GitHub</a>
+    <a class="pillbtn" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download</a>
   </nav>
 </header>
 
@@ -312,69 +344,55 @@
     <div class="psst"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 19.5 12l-6.2 1.5L10 20z"/></svg>Psst… it’s interactive! Try the Tack menu or the button above.</div>
   </section>
 
+
   <section class="features" id="features">
-    <div class="fgrid">
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17V11a3 3 0 0 1 3-3h6M31 8h6a3 3 0 0 1 3 3v6M40 31v6a3 3 0 0 1-3 3h-6M17 40h-6a3 3 0 0 1-3-3v-6"/><circle cx="24" cy="24" r="4" fill="#241f1d" stroke="none"/></svg>
-        <h3>Area, window<br>or full screen</h3><p>One shortcut and you’re capturing.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39l2-9L32 9a4.2 4.2 0 0 1 6 6L17 36z"/><path d="M28 13l7 7"/></svg>
-        <h3>Annotate<br>in a flash</h3><p>Arrows, text, blur, redact and crop.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="#241f1d" stroke="#241f1d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M17 6h14l-2 12 7 7H10l7-7z"/><path d="M24 25v17" fill="none" stroke-width="4"/></svg>
-        <h3>Pin to<br>your screen</h3><p>Keep a capture floating while you work.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14V9a1 1 0 0 1 1-1h5M34 8h5a1 1 0 0 1 1 1v5M40 34v5a1 1 0 0 1-1 1h-5M14 40H9a1 1 0 0 1-1-1v-5"/><path d="M15 18h18M15 24h18M15 30h10"/></svg>
-        <h3>Copy text<br>&amp; QR codes</h3><p>Grab words from anything on screen.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="6" width="14" height="23" rx="7" fill="#241f1d"/><path d="M10 23a14 14 0 0 0 28 0M24 37v6"/></svg>
-        <h3>Record with<br>sound &amp; webcam</h3><p>MP4 or GIF, then trim it right away.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 14v10l7 4"/></svg>
-        <h3>Searchable<br>history</h3><p>Find captures by the text inside them.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="none" stroke="#241f1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="21" width="32" height="21" rx="5" fill="#241f1d"/><path d="M15 21v-6a9 9 0 0 1 18 0v6"/></svg>
-        <h3>Private<br>by design</h3><p>No account, no analytics, no network.</p></div>
-      <div class="feat">
-        <svg class="ico" viewBox="0 0 48 48" fill="#241f1d" stroke="#241f1d" stroke-width="3" stroke-linejoin="round"><path d="M27 4 9 26h12l-3 18 21-24H26z"/></svg>
-        <h3>Truly <span class="scribble" id="scribble">native<svg viewBox="0 0 200 80" preserveAspectRatio="none"><path pathLength="1" d="M20 44C14 20 70 8 118 10c56 2 86 18 78 38-8 22-70 26-124 22C28 66 6 54 14 38"/></svg></span><br>app</h3><p>Light, fast, and made with Swift.</p></div>
+    <div class="sec-head"><div class="eyebrow">Features</div><h2>Everything you reach for, nothing you don’t.</h2></div>
+    <div class="bento" id="bento">
+      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 17V11a3 3 0 0 1 3-3h6M31 8h6a3 3 0 0 1 3 3v6M40 31v6a3 3 0 0 1-3 3h-6M17 40h-6a3 3 0 0 1-3-3v-6"/><circle cx="24" cy="24" r="4" fill="currentColor" stroke="none"/></svg><h3>Area, window or full screen</h3><p>One shortcut and you’re capturing.</p><div class="chips"><kbd>⇧⌘3</kbd><kbd>⇧⌘4</kbd><kbd>⇧⌘5</kbd><kbd>⇧⌘6</kbd></div></article>
+      <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39l2-9L32 9a4.2 4.2 0 0 1 6 6L17 36z"/><path d="M28 13l7 7"/></svg><h3>Annotate in a flash</h3><p>Arrows, text, blur, redact and crop.</p></article>
+      <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M17 6h14l-2 12 7 7H10l7-7z"/><path d="M24 25v17" fill="none" stroke-width="4"/></svg><h3>Pin to your screen</h3><p>Keep a capture floating while you work.</p></article>
+      <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14V9a1 1 0 0 1 1-1h5M34 8h5a1 1 0 0 1 1 1v5M40 34v5a1 1 0 0 1-1 1h-5M14 40H9a1 1 0 0 1-1-1v-5"/><path d="M15 18h18M15 24h18M15 30h10"/></svg><h3>Copy text &amp; QR codes</h3><p>Grab words from anything on screen.</p></article>
+      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="6" width="14" height="23" rx="7" fill="currentColor"/><path d="M10 23a14 14 0 0 0 28 0M24 37v6"/></svg><h3>Record with sound &amp; webcam</h3><p>MP4 or GIF, then trim it right away.</p><div class="wave" aria-hidden="true"><i style="--h:30%;--d:0.0s"></i><i style="--h:60%;--d:0.2s"></i><i style="--h:40%;--d:0.4s"></i><i style="--h:85%;--d:0.1s"></i><i style="--h:55%;--d:0.5s"></i><i style="--h:95%;--d:0.3s"></i><i style="--h:45%;--d:0.6s"></i><i style="--h:70%;--d:0.15s"></i><i style="--h:35%;--d:0.45s"></i><i style="--h:80%;--d:0.25s"></i><i style="--h:50%;--d:0.55s"></i><i style="--h:65%;--d:0.05s"></i></div></article>
+      <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 14v10l7 4"/></svg><h3>Searchable history</h3><p>Find captures by the text inside them.</p></article>
+      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="21" width="32" height="21" rx="5" fill="currentColor"/><path d="M15 21v-6a9 9 0 0 1 18 0v6"/></svg><h3>Private by design</h3><p>No account, no analytics, no tracking. Your captures stay on your Mac.</p><div class="chips"><span>No account</span><span>No analytics</span><span>No tracking</span></div></article>
+      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M27 4 9 26h12l-3 18 21-24H26z"/></svg><h3>Truly native</h3><p>Light, fast, and made with Swift.</p><div class="chips"><span>Swift</span><span>ScreenCaptureKit</span><span>Apple Silicon + Intel</span></div></article>
     </div>
   </section>
 
   <section class="final">
-    <a class="btn dark" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
-    <div><span class="note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M8 21h8"/></svg>macOS 14 or later · Free &amp; open source</span></div>
+    <div class="panel">
+      <h2>Get Tack. It’s free.</h2>
+      <p class="l">Download once. After that, Tack updates itself, so you never have to reinstall.</p>
+      <a class="btn dark" href="https://github.com/itsssdh/Tack/releases/latest/download/Tack.dmg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.8-1.4z"/></svg>Download for Mac</a>
+      <span class="note">macOS 14 or later · Free &amp; open source</span>
+    </div>
   </section>
 
   <section class="faq" id="faq">
-    <h2>Questions</h2>
+    <div class="faq-head"><div class="eyebrow">FAQ</div><h2>Questions</h2><p>Still stuck? Open an issue on GitHub or message me on Discord.</p></div>
+    <div class="faq-list">
     <details><summary>macOS warns when I open Tack. Is that normal?</summary><p>Yes. Tack is free and isn’t signed with a paid Apple certificate, so macOS asks you to confirm it once. Open System Settings &gt; Privacy &amp; Security, scroll down and click <strong>Open Anyway</strong>.</p></details>
     <details><summary>How do I allow Screen Recording?</summary><p>In Tack’s Settings &gt; General press <strong>Allow…</strong> next to Screen Recording. In the list that opens, press the <strong>+</strong> button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.</p></details>
     <details><summary>Is Tack really free?</summary><p>Yes. Tack is free and open source, and the code is on <a href="https://github.com/itsssdh/Tack">GitHub</a>.</p></details>
-    <details><summary>Does Tack collect anything?</summary><p>No. There are no accounts and no analytics, and the app doesn’t use the network. Your screenshots and recordings stay on your Mac. See the <a href="privacy.html">privacy page</a>.</p></details>
+    <details><summary>Does Tack collect anything?</summary><p>No. There are no accounts and no analytics. The only network use is checking for updates. Your screenshots and recordings stay on your Mac. See the <a href="privacy.html">privacy page</a>.</p></details>
     <details><summary>Why does Tack ask for camera and microphone access?</summary><p>Only for the optional webcam bubble and microphone audio in a recording. If you don’t turn them on, Tack doesn’t use them.</p></details>
     <details><summary>What do I need to run Tack?</summary><p>A Mac running macOS 14 (Sonoma) or later, on Apple Silicon or Intel.</p></details>
     <details><summary>How do I get help?</summary><p>Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p></details>
+    </div>
   </section>
 </main>
 
 <footer>
-  <div class="support">Need help? Message me on Discord:
-    <button type="button" id="discord" title="Copy my Discord username"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a20 20 0 0 0 6 3l1.3-2.1c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a20 20 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Zm7 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Z"/></svg><span id="discordLabel">@its.dh</span></button>
-  </div>
-  <div class="social">
-    <a href="https://github.com/itsssdh/Tack" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
-    <a href="https://github.com/itsssdh/Tack/issues" aria-label="Report an issue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg></a>
-    <a href="privacy.html" aria-label="Privacy"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.2 8 11 4.6-1.8 8-6 8-11V5z"/></svg></a>
-  </div>
-  <div class="legal">© 2026 itsssdh · <a href="changelog.html">Changelog</a> · <a href="privacy.html">Privacy</a></div>
-  <div class="word" aria-hidden="true">Tack</div>
+  <a class="brand" href="./"><img src="icon.png" alt="">Tack</a>
+  <nav class="flinks"><a href="https://github.com/itsssdh/Tack">GitHub</a><a href="https://github.com/itsssdh/Tack/issues">Report an issue</a><a href="changelog.html">Changelog</a><a href="privacy.html">Privacy</a></nav>
+  <div class="support"><button type="button" id="discord" title="Copy my Discord username"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a20 20 0 0 0 6 3l1.3-2.1c-.7-.3-1.4-.6-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a20 20 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Zm7 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.100 1.100 2.100 2.400-.9 2.400-2.100 2.400Z"/></svg><span id="discordLabel">Support: @its.dh</span></button></div>
+  <div class="legal">© 2026 itsssdh</div>
 </footer>
 
 <script>
 document.getElementById('discord').addEventListener('click', () => {
   const label = document.getElementById('discordLabel');
-  const done = () => { label.textContent = 'Copied! Add @its.dh on Discord'; setTimeout(() => label.textContent = '@its.dh', 2500); };
+  const done = () => { label.textContent = 'Copied! Add @its.dh on Discord'; setTimeout(() => label.textContent = 'Support: @its.dh', 2500); };
   if (navigator.clipboard) navigator.clipboard.writeText('its.dh').then(done, done); else done();
 });
 </script>
@@ -521,17 +539,17 @@ document.getElementById('discord').addEventListener('click', () => {
 
   /* launch animation ends, then things below the fold fade up as they scroll into view */
   setTimeout(() => document.documentElement.classList.remove('intro'), 3400);
-  const items = document.querySelectorAll('.feat, .final .btn, .final .note, .faq h2, .faq details, .social a, .legal');
-  items.forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--d', ((i % 4) * 0.09) + 's'); });
+  const items = document.querySelectorAll('.sec-head, .feat, .panel, .faq-head, .faq details, footer');
+  items.forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--d', ((i % 4) * 0.08) + 's'); });
   if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .15, rootMargin: '0px 0px -40px 0px' });
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12, rootMargin: '0px 0px -40px 0px' });
     items.forEach(el => io.observe(el));
   } else items.forEach(el => el.classList.add('in'));
 
-  /* the hand-drawn circle draws itself when it scrolls into view */
-  const sc = $('scribble');
-  if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { sc.classList.add('in'); o.disconnect(); } }), { threshold: .8 }).observe(sc);
-  else sc.classList.add('in');
+  /* a soft green spotlight follows the pointer across the feature cards */
+  document.querySelectorAll('.feat').forEach(c => c.addEventListener('pointermove', e => {
+    const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
+  }));
 })();
 </script>
 </body>
