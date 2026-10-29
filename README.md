@@ -6,7 +6,7 @@ Website: https://itsssdh.github.io/Tack/
 
 ## Install
 
-1. Download `Tack-1.0.1.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
+1. Download `Tack-1.0.2.dmg` from the [latest release](https://github.com/itsssdh/Tack/releases/latest), open it and drag Tack into Applications.
 2. Open Tack. Because it is not signed with a paid Apple certificate, macOS will warn on first launch: open System Settings > Privacy & Security, scroll down, click **Open Anyway** and confirm with your password or Touch ID. You only do this once.
 3. Allow Screen Recording. In Tack's Settings > General, press **Allow…** next to Screen Recording. System Settings opens to the Screen Recording list: press the **+** button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.
 
@@ -65,3 +65,15 @@ Not built. If added later it would go behind a single `Uploader` protocol that t
 ## Making a release (for maintainers)
 
 Only needed to publish a new version. Set the version in `Release.config`, then run `./release.sh`. It builds an Apple Silicon + Intel app and packs it into `release/Tack-<version>.dmg`: a window with a background picture, drawn by `dmg/background.swift` and laid out by `dmg/make_dmg.sh`. Signing settings are in `Release.config`. Attach the DMG to a new release on GitHub.
+
+### Updates
+
+Tack updates itself with [Sparkle](https://sparkle-project.org). Installed copies read `docs/appcast.xml` (served at https://itsssdh.github.io/Tack/appcast.xml) and install new versions automatically, or when you choose Check for Updates in the menu.
+
+To ship a version:
+
+1. In `Release.config`, raise `VERSION` and raise `BUILD` by one (Sparkle compares `BUILD`, so it must always go up).
+2. Run `RELEASE_NOTES="What changed" ./release.sh`. This builds the DMG, signs it with your update key and adds it to `docs/appcast.xml`.
+3. Create the GitHub release (tag `v<version>`) and attach the DMG **first**, then commit and push `docs/` so the feed goes live.
+
+The update signing key lives in your login keychain (made once with Sparkle's `generate_keys`). Back it up with `generate_keys -x file`; if it is lost, installed copies cannot be updated and everyone has to download the app again. Its public half is `SUPublicEDKey` in `Resources/Info.plist`.

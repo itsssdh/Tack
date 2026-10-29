@@ -26,6 +26,12 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Tack" "$APP/Contents/MacOS/Tack"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
+# Sparkle (the updater) travels inside the app.
+SPARKLE="$(find .build/artifacts -type d -path '*macos-arm64_x86_64/Sparkle.framework' | head -1)"
+[ -n "$SPARKLE" ] || { echo "Sparkle.framework not found; run: swift package resolve"; exit 1; }
+mkdir -p "$APP/Contents/Frameworks"
+ditto "$SPARKLE" "$APP/Contents/Frameworks/Sparkle.framework"
+
 # Your details (Release.config) go into the Info.plist. Anything still unfilled is left visible as {{...}}.
 [ -f Release.config ] && source Release.config
 fill() {  # fill FILE: replace the {{...}} placeholders that have a real value

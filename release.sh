@@ -76,6 +76,13 @@ else
     echo "NOTE: this build is not notarized. macOS will warn on first launch; say so on your download page."
 fi
 shasum -a 256 "$DMG" | tee "$DMG.sha256"
+
+# 6. Tell installed copies of Tack about it: sign the DMG and add it to the update feed (docs/appcast.xml).
+if [ -n "${RELEASE_NOTES:-}" ]; then
+    ./dmg/add_to_appcast.sh "$VERSION" "$BUILD" "$DMG" "$RELEASE_NOTES"
+else
+    echo "NOTE: no RELEASE_NOTES given, so the update feed was not changed. Run again with RELEASE_NOTES=\"What changed\" ./release.sh"
+fi
 echo
 echo "Done: $DMG"
 echo "Before you publish: test this DMG on a Mac that has never had the app."

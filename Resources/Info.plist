@@ -26,6 +26,14 @@
     <false/>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © {{YEAR}} {{COPYRIGHT_HOLDER}}. All rights reserved.</string>
+    <key>SUFeedURL</key>
+    <string>https://itsssdh.github.io/Tack/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>7W4RX6kuUHe5qi5iRs6RKgGsUry0I95uDacedhmr4SM=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

@@ -465,6 +465,7 @@ private struct GeneralTab: View {
     /// Read once, off the main thread: asking the system for the login item state is slow and the body runs often.
     @StateObject private var launchAtLogin = Field(false)
     @StateObject private var loginError = Field<String?>(nil)
+    @StateObject private var autoUpdate = Field(Updater.shared.installsAutomatically)
 
     @StateObject private var showScreenHelp = Field(UserDefaults.standard.bool(forKey: "askedForScreenRecording"))
 
@@ -561,6 +562,18 @@ private struct GeneralTab: View {
                 ))
                 CardDivider()
                 ToggleRow(title: "Play a sound after each capture", isOn: $playSound)
+                CardDivider()
+                ToggleRow(title: "Install updates automatically", isOn: Binding(
+                    get: { autoUpdate.value },
+                    set: { on in
+                        Updater.shared.installsAutomatically = on
+                        autoUpdate.value = on
+                    }
+                ))
+                CardDivider()
+                Row(title: "Check for updates", detail: "You have version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")") {
+                    Button("Check Now") { Updater.shared.checkForUpdates() }
+                }
             }
             if let message = loginError.value {
                 Text(message).font(.system(size: 12)).foregroundStyle(.red).padding(.horizontal, 6)
