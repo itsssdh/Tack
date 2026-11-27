@@ -561,7 +561,7 @@ final class RecordingController {
     /// The finished recording comes back as a preview in the corner, playing, with Copy and Save showing.
     private func offerResult(url: URL, isGIF: Bool) {
         if Prefs.playSound { NSSound(named: NSSound.Name("Glass"))?.play() }
-        QuickAccess.shared.presentMedia(url, isGIF: isGIF, scale: recordingScale, showingActions: true)
+        QuickAccess.shared.presentMedia(url, isGIF: isGIF, scale: recordingScale, showingActions: true, autoUpload: true)
     }
 
     private static func mixAudio(from source: URL, to output: URL) async -> Bool {

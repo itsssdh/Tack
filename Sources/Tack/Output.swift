@@ -110,7 +110,7 @@ enum CaptureOutput {
     /// Shows the bottom-left preview. The user then chooses Copy (clipboard only) or Save (clipboard + folder).
     static func deliver(_ image: CGImage) {
         Editor.lastCapture = image
-        QuickAccess.shared.present(image)
+        QuickAccess.shared.present(image, autoUpload: true)
         if Prefs.playSound {
             NSSound(named: NSSound.Name("Pop"))?.play()
         }

@@ -57,6 +57,10 @@ final class CaptureService {
 
     private var panels: [SelectionPanel] = []
     private var busy = false
+    private var cancelActive: (() -> Void)?
+
+    /// Closes the selection overlay if one is open, as if Esc had been pressed.
+    func cancelSelection() { cancelActive?() }
 
     // MARK: Entry points
 
@@ -188,10 +192,12 @@ final class CaptureService {
                 refresh?.cancel()
                 if let observer { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
                 EscapeCatcher.shared.end()
+                self?.cancelActive = nil
                 self?.panels.forEach { $0.orderOut(nil) }
                 self?.panels.removeAll()
                 cont.resume(returning: result)
             }
+            cancelActive = { finish(.cancelled) }
 
             // Builds one overlay per screen on the desktop you are on right now.
             let makePanels: (_ frozen: [(NSScreen, CGImage)], _ content: SCShareableContent, _ mode: SelectionMode, _ activate: Bool) -> Void = { [weak self] frozen, content, mode, activate in

@@ -10,7 +10,7 @@ final class Field<T>: ObservableObject {
 }
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, screenshots, recording, shortcuts
+    case general, screenshots, recording, uploads, shortcuts
 
     var id: String { rawValue }
 
@@ -19,6 +19,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return "General"
         case .screenshots: return "Screenshots"
         case .recording: return "Recording"
+        case .uploads: return "Uploads"
         case .shortcuts: return "Shortcuts"
         }
     }
@@ -28,6 +29,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return "gearshape.fill"
         case .screenshots: return "viewfinder"
         case .recording: return "record.circle.fill"
+        case .uploads: return "arrow.up"
         case .shortcuts: return "keyboard.fill"
         }
     }
@@ -37,6 +39,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return Color(red: 0.55, green: 0.56, blue: 0.60)
         case .screenshots: return .blue
         case .recording: return .red
+        case .uploads: return .teal
         case .shortcuts: return .indigo
         }
     }
@@ -61,10 +64,10 @@ private struct IconBadge: View {
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(.white)
-            .frame(width: 24, height: 24)
-            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(color.gradient))
+            .frame(width: 22, height: 22)
+            .background(RoundedRectangle(cornerRadius: 6.5, style: .continuous).fill(color.gradient))
     }
 }
 
@@ -87,6 +90,7 @@ struct SettingsView: View {
     private static let groups: [(title: String?, panes: [SettingsPane])] = [
         (nil, [.general]),
         ("Capture", [.screenshots, .recording]),
+        ("Sharing", [.uploads]),
         ("Controls", [.shortcuts]),
     ]
 
@@ -100,15 +104,24 @@ struct SettingsView: View {
             sidebar
                 .frame(width: 224)
                 .frame(maxHeight: .infinity)
-                .background(SidebarBackground())
 
-            Divider()
+            Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1)
 
-            VStack(spacing: 0) {
-                header
+            // The pane scrolls underneath its title, which stays at the top.
+            ZStack(alignment: .top) {
                 detail(for: selection.value)
                     .scrollContentBackground(.hidden)
                     .transaction { $0.animation = nil } // switching panes should be instant, not a cross-fade
+                    // Content fades out as it passes under the title, so the two never overprint.
+                    .mask(
+                        VStack(spacing: 0) {
+                            // Fully hidden across the title row (the first 28 points), then fading in until the page starts.
+                            LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .clear, location: 0.53), .init(color: .black, location: 1)],
+                                           startPoint: .top, endPoint: .bottom).frame(height: 53)
+                            Rectangle()
+                        }
+                    )
+                header
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -116,7 +129,8 @@ struct SettingsView: View {
         .overlay(alignment: .top) {
             WindowDragArea().frame(height: 30)
         }
-        .frame(width: 800, height: 600)
+        .frame(width: 620, height: 674)
+        .ignoresSafeArea() // the pane and sidebar start at the very top, under the transparent title bar
     }
 
     // MARK: Sidebar
@@ -128,8 +142,8 @@ struct SettingsView: View {
                     Text(title)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .padding(.leading, 28)
-                        .padding(.top, 22)
+                        .padding(.leading, 8)
+                        .padding(.top, 23)
                         .padding(.bottom, 6)
                 } else if index > 0 {
                     Spacer().frame(height: 10)
@@ -142,7 +156,7 @@ struct SettingsView: View {
             // With the menu bar icon hidden, this window is where Tack is used from (through the Dock), so the menu's actions live here.
             if !(showMenuBarIcon || !showInDock) { SidebarQuickActions() }
         }
-        .padding(.top, 56) // room for the window buttons
+        .padding(.top, 58) // room for the window buttons
         .padding(.bottom, 22)
         .padding(.horizontal, 12)
     }
@@ -150,23 +164,22 @@ struct SettingsView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             IconBadge(symbol: selection.value.symbol, color: selection.value.color)
             Text(selection.value.title)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 15, weight: .semibold))
             Spacer()
         }
-        .padding(.horizontal, 26)
-        .padding(.top, 20)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 17)
+        .padding(.top, 14)
     }
 
     /// For the self-test: a picture of one whole pane, taller than the window, so nothing is hidden below the fold.
     @MainActor
     static func renderForTesting(_ pane: SettingsPane, height: CGFloat) -> NSImage? {
-        let content = SettingsView().detailForRender(pane).frame(width: 576, height: height).background(Color(red: 0.16, green: 0.16, blue: 0.17)).tint(settingsAccent)
+        let content = SettingsView().detailForRender(pane).frame(width: 395, height: height).background(Color(red: 0.16, green: 0.16, blue: 0.17)).tint(settingsAccent)
         let host = NSHostingView(rootView: content)
-        host.frame = NSRect(x: 0, y: 0, width: 576, height: height)
+        host.frame = NSRect(x: 0, y: 0, width: 395, height: height)
         let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .darkAqua)
@@ -191,6 +204,7 @@ struct SettingsView: View {
         case .general: GeneralTab()
         case .screenshots: ScreenshotsTab()
         case .recording: RecordingTab()
+        case .uploads: UploadsTab()
         case .shortcuts: ShortcutsTab()
         }
     }
@@ -205,19 +219,19 @@ private struct SidebarRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 11) {
+            HStack(spacing: 8) {
                 IconBadge(symbol: pane.symbol, color: pane.color)
                 Text(pane.title)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13.5))
                 Spacer(minLength: 0)
             }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(Color.primary.opacity(selected ? 0.12 : (hovering.value ? 0.06 : 0)))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(selected ? 0.1 : (hovering.value ? 0.05 : 0)))
             )
-            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovering.value = $0 }
@@ -294,22 +308,87 @@ private struct QuickActionRow: View {
     }
 }
 
-/// The sidebar's own material, a little different from the pane beside it.
-private struct SidebarBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let v = NSVisualEffectView()
-        v.material = .sidebar
-        v.blendingMode = .withinWindow
-        v.state = .active
-        return v
-    }
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
-
 // MARK: Building blocks (rounded cards with rows, like Alcove's settings)
 
 /// The one accent color of the window: toggles, sliders, menus and the ring around a chosen tile.
-private let settingsAccent = Color(red: 0.43, green: 0.82, blue: 0.73)
+private let settingsAccent = Color(red: 0.176, green: 0.831, blue: 0.749)
+
+/// The switch used everywhere: a teal pill when on, a grey one when off, with a wide white knob.
+private struct PillToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button { configuration.isOn.toggle() } label: {
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                Capsule().fill(configuration.isOn ? settingsAccent : Color.primary.opacity(0.18))
+                Capsule().fill(Color.white).frame(width: 27, height: 16).padding(2)
+            }
+            .frame(width: 44, height: 20)
+            .animation(.easeOut(duration: 0.15), value: configuration.isOn)
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(configuration.isOn ? "On" : "Off")
+        .accessibilityAddTraits(.isToggle)
+    }
+}
+
+/// A soft rounded button, for "Choose…", "Check Now" and the like.
+private struct PillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .medium))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(configuration.isPressed ? 0.2 : 0.1)))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+/// A text field drawn as a soft rounded box.
+private struct PillFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .textFieldStyle(.plain)
+            .font(.system(size: 13))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.08)))
+    }
+}
+
+/// A slider with a thin teal track, a wide white thumb and small dots under it.
+private struct PillSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    var dots = 4
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width, thumb: CGFloat = 20
+            let fraction = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.14)).frame(height: 5)
+                Capsule().fill(settingsAccent).frame(width: thumb / 2 + (width - thumb) * fraction, height: 5)
+                Capsule().fill(Color.white).frame(width: thumb, height: 16)
+                    .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+                    .offset(x: (width - thumb) * fraction)
+                HStack {
+                    ForEach(0..<dots, id: \.self) { i in
+                        if i > 0 { Spacer() }
+                        Circle().fill(Color.primary.opacity(0.3)).frame(width: 2, height: 2)
+                    }
+                }
+                .padding(.horizontal, thumb / 2)
+                .offset(y: 13)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
+                let t = min(max(0, (drag.location.x - thumb / 2) / (width - thumb)), 1)
+                value = range.lowerBound + Double(t) * (range.upperBound - range.lowerBound)
+            })
+        }
+        .frame(height: 28)
+    }
+}
 
 /// A scrolling page of sections.
 private struct SettingsPage<Content: View>: View {
@@ -318,9 +397,9 @@ private struct SettingsPage<Content: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) { content }
-                .padding(.horizontal, 26)
-                .padding(.top, 6)
-                .padding(.bottom, 26)
+                .padding(.horizontal, 17)
+                .padding(.top, 53) // the pane's title sits above this and the content scrolls beneath it
+                .padding(.bottom, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -335,8 +414,8 @@ private struct SectionTitle: View {
         Text(text)
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.secondary)
-            .padding(.leading, 6)
-            .padding(.top, 14)
+            .padding(.leading, 8)
+            .padding(.top, 8)
     }
 }
 
@@ -347,8 +426,8 @@ private struct Card<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) { content }
             .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.primary.opacity(0.055)))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
     }
 }
 
@@ -365,7 +444,7 @@ private struct Note: View {
         Text(text)
             .font(.system(size: 12))
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 8)
             .padding(.top, 2)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -381,10 +460,10 @@ private struct Row<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14))
+                Text(title).font(.system(size: 13)).lineLimit(2)
                 if let detail {
                     Text(detail)
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .lineLimit(truncateDetail ? 1 : nil)
                         .truncationMode(.middle)
@@ -394,9 +473,9 @@ private struct Row<Trailing: View>: View {
             Spacer(minLength: 12)
             trailing
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(minHeight: 46)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(minHeight: 42)
     }
 }
 
@@ -407,7 +486,7 @@ private struct ToggleRow: View {
 
     var body: some View {
         Row(title: title, detail: detail) {
-            Toggle("", isOn: $isOn).labelsHidden().toggleStyle(.switch)
+            Toggle("", isOn: $isOn).labelsHidden().toggleStyle(PillToggleStyle())
         }
     }
 }
@@ -420,11 +499,31 @@ private struct MenuRow<V: Hashable>: View {
 
     var body: some View {
         Row(title: title) {
-            Picker("", selection: $selection) {
-                ForEach(options.indices, id: \.self) { Text(options[$0].label).tag(options[$0].value) }
+            // The chosen value, then a small round button with up and down chevrons; clicking either opens the menu.
+            Menu {
+                ForEach(options.indices, id: \.self) { i in
+                    Button {
+                        selection = options[i].value
+                    } label: {
+                        if options[i].value == selection { Label(options[i].label, systemImage: "checkmark") } else { Text(options[i].label) }
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(options.first { $0.value == selection }?.label ?? "")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Color.secondary)
+                        .frame(width: 22, height: 22)
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
+                }
+                .contentShape(Rectangle())
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
+            .menuStyle(.button)
+            .buttonStyle(.plain) // plain, so the label keeps its own colors and order instead of taking the accent tint
+            .menuIndicator(.hidden)
             .fixedSize()
         }
     }
@@ -440,13 +539,13 @@ private struct ActionRow: View {
         Button(action: action) {
             HStack {
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(destructive ? Color.red : settingsAccent)
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .frame(minHeight: 46)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minHeight: 42)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -460,11 +559,10 @@ private struct ValuePill: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 13, weight: .medium)).monospacedDigit()
+            .font(.system(size: 13, weight: .medium, design: .monospaced))
             .padding(.horizontal, 10)
             .padding(.vertical, 3)
-            .background(Capsule().fill(Color.primary.opacity(0.08)))
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
     }
 }
 
@@ -487,11 +585,13 @@ private struct TileChoice<V: Hashable, Icon: View>: View {
                     .frame(height: 62)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(chosen ? settingsAccent : Color.primary.opacity(0.1), lineWidth: chosen ? 2.5 : 1)
+                            .strokeBorder(chosen ? settingsAccent : Color.primary.opacity(0.1), lineWidth: chosen ? 3 : 1)
                     )
                     Text(option.label)
                         .font(.system(size: 13, weight: chosen ? .semibold : .regular))
                         .foregroundStyle(chosen ? Color.primary : Color.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { selection = option.value }
@@ -656,6 +756,7 @@ private struct GeneralTab: View {
                 CardDivider()
                 Row(title: "Check for updates", detail: "You have version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")") {
                     Button("Check Now") { Updater.shared.checkForUpdates() }
+                        .buttonStyle(PillButtonStyle())
                 }
             }
             if let message = loginError.value {
@@ -732,6 +833,7 @@ private struct PermissionRow: View {
                     .foregroundStyle(granted ? Color.green : Color.orange)
                 if !granted {
                     Button(buttonTitle, action: open)
+                        .buttonStyle(PillButtonStyle())
                 }
             }
             .fixedSize()
@@ -764,8 +866,8 @@ private struct ScreenshotsTab: View {
             Card {
                 Row(title: "Save screenshots to", detail: folder.isEmpty ? Prefs.screenshotFolder.path : folder, truncateDetail: true) {
                     HStack(spacing: 8) {
-                        if !folder.isEmpty { Button("Reset") { folder = "" } }
-                        Button("Choose…") { chooseFolder() }
+                        if !folder.isEmpty { Button("Reset") { folder = "" }.buttonStyle(PillButtonStyle()) }
+                        Button("Choose…") { chooseFolder() }.buttonStyle(PillButtonStyle())
                     }
                 }
             }
@@ -806,23 +908,23 @@ private struct ScreenshotsTab: View {
                 MenuRow(title: "Format", selection: $format, options: ImageFormat.allCases.map { ($0.label, $0.rawValue) })
                 if format == ImageFormat.jpeg.rawValue {
                     CardDivider()
-                    VStack(spacing: 10) {
+                    VStack(spacing: 6) {
                         HStack {
-                            Text("JPEG quality").font(.system(size: 14))
+                            Text("JPEG quality").font(.system(size: 13))
                             Spacer()
                             ValuePill("\(Int(quality * 100))%")
                         }
-                        Slider(value: $quality, in: 0.3...1.0)
+                        PillSlider(value: $quality, range: 0.3...1.0)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
                 }
                 CardDivider()
                 Row(title: "File name") {
                     TextField("", text: $template)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(PillFieldStyle())
                         .multilineTextAlignment(.trailing)
-                        .frame(width: 260)
+                        .frame(width: 210)
                 }
             }
             Note("Use {date} and {time} in the name. Existing files are never overwritten.")
@@ -897,7 +999,129 @@ private struct RecordingTab: View {
                         panel.canCreateDirectories = true
                         if panel.runModal() == .OK, let url = panel.url { folder = url.path }
                     }
+                    .buttonStyle(PillButtonStyle())
                 }
+            }
+        }
+    }
+}
+
+// MARK: Uploads
+
+/// A warning under a card: an orange triangle and text, so it is not mistaken for a plain hint.
+private struct WarningNote: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.system(size: 12))
+            Text(text).font(.system(size: 12)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 2)
+    }
+}
+
+/// A title with a text field on the right.
+private struct FieldRow: View {
+    let title: String
+    var detail: String?
+    var prompt = ""
+    @Binding var text: String
+    var secure = false
+
+    var body: some View {
+        Row(title: title, detail: detail) {
+            Group {
+                if secure { SecureField(prompt, text: $text) } else { TextField(prompt, text: $text) }
+            }
+            .textFieldStyle(PillFieldStyle())
+            .multilineTextAlignment(.trailing)
+            .frame(width: 190)
+        }
+    }
+}
+
+private struct UploadsTab: View {
+    @AppStorage(PrefKey.uploadsEnabled) private var enabled = false
+    @AppStorage(PrefKey.uploadHost) private var host = UploadHost.olrite.rawValue
+    @AppStorage(PrefKey.uploadURL) private var customURL = ""
+    @AppStorage(PrefKey.uploadField) private var field = "file"
+    @AppStorage(PrefKey.uploadLinkKey) private var linkKey = "url"
+    @AppStorage(PrefKey.uploadKeyHeader) private var keyHeader = "X-API-Key"
+    @AppStorage(PrefKey.uploadAutoShots) private var autoShots = false
+    @AppStorage(PrefKey.uploadAutoRecordings) private var autoRecordings = false
+    @StateObject private var apiKey = Field(Keychain.read(UploadSettings.keychainAccount) ?? "")
+
+    private var keyBinding: Binding<String> {
+        Binding(
+            get: { apiKey.value },
+            set: { apiKey.value = $0; Keychain.write($0, account: UploadSettings.keychainAccount) }
+        )
+    }
+
+    /// Turning an automatic upload on asks first; turning it off does not.
+    private func guarded(_ flag: Binding<Bool>, what: String) -> Binding<Bool> {
+        Binding(
+            get: { flag.wrappedValue },
+            set: { on in
+                guard on else { flag.wrappedValue = false; return }
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "Upload every \(what) automatically?"
+                alert.informativeText = "Each one is sent to the upload host the moment it is taken, before you can look at it, and its link is put on your clipboard. Anything uploaded leaves your Mac and can be seen by anyone with the link."
+                alert.addButton(withTitle: "Turn On")
+                alert.addButton(withTitle: "Cancel")
+                NSApp.activate(ignoringOtherApps: true)
+                if alert.runModal() == .alertFirstButtonReturn { flag.wrappedValue = true }
+            }
+        )
+    }
+
+    /// True when the custom address is a usable https address (checked here so typing does not read the Keychain).
+    private var customReady: Bool {
+        guard let url = URL(string: customURL.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+        return url.scheme?.lowercased() == "https" && url.host?.isEmpty == false
+    }
+
+    var body: some View {
+        SettingsPage {
+            SectionTitle("Uploads")
+            Card {
+                ToggleRow(title: "Show an upload button on previews", detail: "Off by default. Nothing is uploaded unless you click the button.", isOn: $enabled)
+            }
+
+            if enabled {
+                SectionTitle("Host")
+                Card {
+                    MenuRow(title: "Upload to", selection: $host, options: UploadHost.allCases.map { ($0.label, $0.rawValue) })
+                    if host == UploadHost.custom.rawValue {
+                        CardDivider()
+                        FieldRow(title: "Address", prompt: "https://example.com/upload", text: $customURL)
+                        CardDivider()
+                        FieldRow(title: "File field", prompt: "file", text: $field)
+                        CardDivider()
+                        FieldRow(title: "Link in reply", prompt: "url", text: $linkKey)
+                        CardDivider()
+                        FieldRow(title: "Key header", prompt: "X-API-Key", text: $keyHeader)
+                    }
+                    CardDivider()
+                    FieldRow(title: "API key", detail: "Optional. Kept in your Keychain.", prompt: "None", text: keyBinding, secure: true)
+                }
+                if host == UploadHost.olrite.rawValue {
+                    Note("Files on olrite.lol are deleted after 24 hours, up to 300 MB each. An API key is optional.")
+                } else if !customReady {
+                    Note("Enter an https address to start uploading.")
+                }
+
+                SectionTitle("Automatic uploads")
+                Card {
+                    ToggleRow(title: "Upload every screenshot", isOn: guarded($autoShots, what: "screenshot"))
+                    CardDivider()
+                    ToggleRow(title: "Upload every recording", isOn: guarded($autoRecordings, what: "recording"))
+                }
+                WarningNote("Automatic uploads send each capture to the host as soon as it is taken, with no chance to look at it first, and replace what is on your clipboard with its link. Anything uploaded leaves your Mac and can be seen by anyone with the link. Leave these off unless you are sure.")
             }
         }
     }
@@ -994,6 +1218,7 @@ private struct ShortcutRow: View {
                 Text(text).font(.caption).foregroundStyle(.red)
             }
             Button(recording.value ? "Press keys…" : shortcut.value.display) { toggleRecording() }
+                .buttonStyle(PillButtonStyle())
                 .frame(width: 92)
             Button {
                 HotkeyManager.shared.resetShortcut(for: action)
@@ -1002,6 +1227,7 @@ private struct ShortcutRow: View {
             } label: {
                 Image(systemName: "arrow.counterclockwise")
             }
+            .buttonStyle(PillButtonStyle())
             .help("Restore default")
         }
         .onDisappear { stopRecording() }

@@ -257,6 +257,13 @@ private final class QuickAccessItem: NSObject {
     private static var nextPinOrder = 1
     /// True while the preview is folded into the group tile because the stack ran out of room.
     var hiddenInGroup = false
+    /// Upload to the host chosen in Settings > Uploads. Off unless the user turned uploads on; text cards are never uploaded.
+    var canUpload: Bool { UploadSettings.isEnabled && !isText }
+    private enum UploadState { case idle, uploading, done(URL) }
+    private var uploadState = UploadState.idle { didSet { refreshUpload() } }
+    private var uploadTask: Task<Void, Never>?
+    private var uploadButton: PillButton?
+    private let uploadSpinner = NSProgressIndicator()
     private var pinButton: PillButton?
     private var pinBadge: NSView?
     /// Keeps the drag's data provider alive while a drag is under way.
@@ -438,6 +445,28 @@ private final class QuickAccessItem: NSObject {
             edit.heightAnchor.constraint(equalToConstant: Self.cornerButton),
         ])
 
+        // Bottom right, opposite the pin button. Only there when uploads are turned on in Settings.
+        if canUpload {
+            let up = Glass.iconButton("arrow.up", tip: "Upload and copy the link", target: self, action: #selector(uploadTapped))
+            up.controlSize = .small
+            up.translatesAutoresizingMaskIntoConstraints = false
+            dim.addSubview(up)
+            NSLayoutConstraint.activate([
+                up.bottomAnchor.constraint(equalTo: dim.bottomAnchor, constant: -10),
+                up.trailingAnchor.constraint(equalTo: dim.trailingAnchor, constant: -10),
+                up.widthAnchor.constraint(equalToConstant: Self.cornerButton),
+                up.heightAnchor.constraint(equalToConstant: Self.cornerButton),
+            ])
+            // Shown in place of the arrow while a file is going out; clicking the button then cancels.
+            uploadSpinner.style = .spinning
+            uploadSpinner.controlSize = .small
+            uploadSpinner.appearance = NSAppearance(named: .darkAqua)
+            uploadSpinner.frame = NSRect(x: 5, y: 5, width: 16, height: 16)
+            uploadSpinner.isHidden = true
+            up.addSubview(uploadSpinner)
+            uploadButton = up
+        }
+
         layoutButtons(in: dim)
 
         content.onHover = { [weak self, weak dim] inside in
@@ -575,6 +604,7 @@ private final class QuickAccessItem: NSObject {
         var entries: [(String, Selector)] = []
         if canEdit { entries.append((isVideo ? "Trim…" : "Edit…", #selector(editTapped))) }
         if isText { entries.append(("Copy", #selector(copyTapped))) }
+        if canUpload { entries.append(("Upload and Copy Link", #selector(uploadTapped))) }
         if !isVideo, !isGIF, !isText {
             entries.append(("Pin to Screen", #selector(pinTapped)))
             entries.append(("Copy Text (OCR / QR)", #selector(ocrTapped)))
@@ -595,6 +625,114 @@ private final class QuickAccessItem: NSObject {
         pinButton?.image = NSImage(systemSymbolName: pinned ? "pin.slash.fill" : "pin.fill", accessibilityDescription: pinned ? "Unpin" : "Pin")
         pinButton?.toolTip = pinned ? "Unpin this preview" : "Pin this preview"
         pinBadge?.isHidden = !pinned
+    }
+
+    // MARK: Upload
+
+    /// Click: upload. While uploading, click cancels. Once done, click copies the link again.
+    @objc fileprivate func uploadTapped() {
+        switch uploadState {
+        case .uploading:
+            uploadTask?.cancel()
+            uploadTask = nil
+            uploadState = .idle
+        case .done(let link):
+            Clipboard.copy(text: link.absoluteString)
+            UploadToast.show("Link copied")
+        case .idle:
+            startUpload()
+        }
+    }
+
+    /// Sends this preview to the chosen host and puts the link on the clipboard. Automatic uploads call this too.
+    func startUpload() {
+        guard canUpload, case .idle = uploadState else { return }
+        guard let target = UploadSettings.target() else {
+            Alerts.show(title: "Uploads are not set up", message: UploadError.notSetUp.localizedDescription)
+            return
+        }
+        uploadState = .uploading
+        UploadToast.show("Uploading…", symbol: "arrow.up")
+        uploadTask = Task { [weak self] in
+            guard let self else { return }
+            var temporary: URL?
+            defer { if let temporary { try? FileManager.default.removeItem(at: temporary) } }
+            do {
+                let (file, isTemporary) = try self.fileForUpload()
+                if isTemporary { temporary = file }
+                let link = try await Uploader.upload(file: file, to: target) { [weak self] fraction in
+                    Task { @MainActor in self?.setUploadProgress(fraction) }
+                }
+                try Task.checkCancellation()
+                Clipboard.copy(text: link.absoluteString)
+                self.uploadState = .done(link)
+                UploadToast.show("Link copied")
+            } catch {
+                if Task.isCancelled || (error as? URLError)?.code == .cancelled { return } // the user cancelled; already back to idle
+                self.uploadState = .idle
+                UploadToast.hide() // the "Uploading…" message is over
+                Alerts.show(title: (error as? UploadError)?.alertTitle ?? "Upload failed", message: error.localizedDescription)
+            }
+        }
+    }
+
+    /// The file to send: a recording as it is on disk, a saved picture as it is, or a fresh copy of the picture in a format hosts take.
+    private func fileForUpload() throws -> (url: URL, isTemporary: Bool) {
+        switch media {
+        case .video(let url), .gif(let url):
+            return (url, false)
+        case .text:
+            throw UploadError.server("Text cannot be uploaded.")
+        case .image:
+            if let url = savedURL, ["png", "jpg", "jpeg", "gif", "webp"].contains(url.pathExtension.lowercased()) { return (url, false) }
+            // TIFF and HEIC are not widely accepted, so those go up as PNG.
+            let format: ImageFormat = Prefs.imageFormat == .jpeg ? .jpeg : .png
+            guard let data = format.encode(image, quality: Prefs.jpegQuality) else { throw CaptureError.encodingFailed }
+            let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Tack Upload", isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let url = FileSaver.uniqueURL(in: folder, name: FileSaver.filename(ext: format.fileExtension))
+            try data.write(to: url, options: .atomic)
+            return (url, true)
+        }
+    }
+
+    private func setUploadProgress(_ fraction: Double) {
+        guard case .uploading = uploadState else { return }
+        if uploadSpinner.isIndeterminate {
+            uploadSpinner.stopAnimation(nil)
+            uploadSpinner.isIndeterminate = false
+            uploadSpinner.minValue = 0
+            uploadSpinner.maxValue = 1
+        }
+        uploadSpinner.doubleValue = fraction
+        uploadButton?.toolTip = "Uploading \(Int(fraction * 100))%. Click to cancel"
+    }
+
+    private func refreshUpload() {
+        guard let button = uploadButton else { return }
+        func show(_ symbol: String, _ tip: String) {
+            button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: tip)
+            button.toolTip = tip
+        }
+        switch uploadState {
+        case .idle:
+            uploadSpinner.stopAnimation(nil)
+            uploadSpinner.isHidden = true
+            button.kind = .regular
+            show("arrow.up", "Upload and copy the link")
+        case .uploading:
+            button.image = nil
+            button.toolTip = "Uploading. Click to cancel"
+            uploadSpinner.isIndeterminate = true
+            uploadSpinner.isHidden = false
+            uploadSpinner.startAnimation(nil)
+        case .done:
+            uploadSpinner.stopAnimation(nil)
+            uploadSpinner.isHidden = true
+            button.tint = .systemGreen
+            button.kind = .prominent
+            show("link", "Link copied. Click to copy it again")
+        }
     }
 
     @objc fileprivate func togglePinTapped() { onTogglePin?(self) }
@@ -895,7 +1033,8 @@ private final class PinnedMenu: NSObject {
     private let ignoring: NSWindow
 
     private static let thumbWidth: CGFloat = 250
-    private static let buttonColumn: CGFloat = 70
+    /// Wider when uploads are on, so the extra upload icon fits beside pin and dismiss.
+    private static var buttonColumn: CGFloat { UploadSettings.isEnabled ? 100 : 70 }
     private static let margin: CGFloat = 30 // room around the glass for its shadow
 
     init(screen: NSScreen, anchor: NSRect, ignoring: NSWindow,
@@ -1060,8 +1199,12 @@ private final class PinnedMenu: NSObject {
         let save = tag(Glass.button("Save", prominent: true, size: .small, target: self, action: #selector(rowAction(_:))), "save", width: Self.buttonColumn)
         let unpin = tag(Glass.iconButton(item.pinned ? "pin.slash.fill" : "pin.fill", tip: item.pinned ? "Unpin" : "Pin", target: self, action: #selector(rowAction(_:))), "pin", width: 30)
         let dismiss = tag(Glass.iconButton("xmark", tip: "Dismiss without saving", target: self, action: #selector(rowAction(_:))), "dismiss", width: 30)
-        let icons = NSStackView(views: [unpin, dismiss])
-        icons.spacing = 10
+        var iconButtons = [unpin, dismiss]
+        if item.canUpload {
+            iconButtons.insert(tag(Glass.iconButton("arrow.up", tip: "Upload and copy the link", target: self, action: #selector(rowAction(_:))), "upload", width: 30), at: 1)
+        }
+        let icons = NSStackView(views: iconButtons)
+        icons.spacing = iconButtons.count == 3 ? 5 : 10
         let buttons = NSStackView(views: item.isText ? [copy, icons] : [copy, save, icons]) // text can only be copied
         buttons.orientation = .vertical
         buttons.alignment = .leading
@@ -1092,6 +1235,7 @@ private final class PinnedMenu: NSObject {
         case "copy": item.copyTapped()
         case "save": item.saveTapped()
         case "pin": onTogglePin(item)
+        case "upload": item.uploadTapped()
         default:
             if item.pinned { shake(sender) } else { item.dismissTapped() }
         }
@@ -1121,7 +1265,8 @@ final class QuickAccess {
 
     /// Previews always appear on the main display (the one with the menu bar), whichever display the capture was made on.
     /// `scale` is the pixel density of the display the picture came from; it defaults to the display the pointer is on.
-    func present(_ image: CGImage, scale: CGFloat? = nil, showingActions: Bool = false, pinned: Bool = false, savedURL: URL? = nil, media: PreviewMedia = .image) {
+    /// `autoUpload` is true for a fresh capture, which is sent to the host straight away if the user turned that on.
+    func present(_ image: CGImage, scale: CGFloat? = nil, showingActions: Bool = false, pinned: Bool = false, savedURL: URL? = nil, media: PreviewMedia = .image, autoUpload: Bool = false) {
         let screen = NSScreen.screens.first ?? NSScreen.main!
         let captureScale = scale ?? CaptureService.screenUnderMouse().backingScaleFactor
 
@@ -1146,6 +1291,7 @@ final class QuickAccess {
         item.savedURL = savedURL
         item.pinned = pinned
         items.append(item)
+        if autoUpload, UploadSettings.autoUploads(media) { item.startUpload() }
 
         let layout = computeLayout()
         // A preview that arrives already pinned while the stack is full goes straight into the group tile, not on screen.
@@ -1213,10 +1359,10 @@ final class QuickAccess {
     }
 
     /// Shows a finished recording as a preview that plays in the card. The file is already saved.
-    func presentMedia(_ url: URL, isGIF: Bool, scale: CGFloat? = nil, showingActions: Bool = false) {
+    func presentMedia(_ url: URL, isGIF: Bool, scale: CGFloat? = nil, showingActions: Bool = false, autoUpload: Bool = false) {
         Task {
             guard let poster = await Self.poster(for: url, isGIF: isGIF) else { return }
-            present(poster, scale: isGIF ? 1 : scale, showingActions: showingActions, savedURL: url, media: isGIF ? .gif(url) : .video(url))
+            present(poster, scale: isGIF ? 1 : scale, showingActions: showingActions, savedURL: url, media: isGIF ? .gif(url) : .video(url), autoUpload: autoUpload)
         }
     }
 

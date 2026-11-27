@@ -37,6 +37,15 @@ enum PrefKey {
     static let recFolder = "recFolder"
     static let gifFPS = "gifFPS"
     static let gifWidth = "gifWidth"
+    // Uploads (everything off until the user turns it on)
+    static let uploadsEnabled = "uploadsEnabled"
+    static let uploadHost = "uploadHost"
+    static let uploadURL = "uploadURL"
+    static let uploadField = "uploadField"
+    static let uploadLinkKey = "uploadLinkKey"
+    static let uploadKeyHeader = "uploadKeyHeader"
+    static let uploadAutoShots = "uploadAutoShots"
+    static let uploadAutoRecordings = "uploadAutoRecordings"
 }
 
 enum ImageFormat: String, CaseIterable, Identifiable {
@@ -136,6 +145,13 @@ enum Prefs {
             PrefKey.recCountdown: 3,
             PrefKey.gifFPS: 12,
             PrefKey.gifWidth: 800,
+            PrefKey.uploadsEnabled: false,
+            PrefKey.uploadHost: UploadHost.olrite.rawValue,
+            PrefKey.uploadField: "file",
+            PrefKey.uploadLinkKey: "url",
+            PrefKey.uploadKeyHeader: "X-API-Key",
+            PrefKey.uploadAutoShots: false,
+            PrefKey.uploadAutoRecordings: false,
         ])
     }
 
@@ -213,6 +229,7 @@ enum Prefs {
             defaults.removePersistentDomain(forName: id)
         }
         saved.forEach { defaults.set($1, forKey: $0) }
+        Keychain.write("", account: UploadSettings.keychainAccount) // the upload API key goes with the settings
         registerDefaults()
     }
 }

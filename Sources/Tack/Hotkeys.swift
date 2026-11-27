@@ -137,6 +137,7 @@ final class HotkeyManager {
 
     fileprivate func fire(id: UInt32) {
         if id == EscapeCatcher.hotKeyID { EscapeCatcher.shared.fire(); return }
+        guard !ScreenLock.shared.isLocked else { return }
         let index = Int(id) - 1
         guard index >= 0, index < HotkeyAction.allCases.count else { return }
         onAction?(HotkeyAction.allCases[index])

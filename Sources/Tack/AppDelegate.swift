@@ -56,6 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             }
         }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main, using: keepPanelsVisible)
+        // Settings and the other windows come back in front after swiping back from a full-screen app.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { SpaceFix.raiseWindowsAfterSpaceChange() }
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main, using: keepPanelsVisible)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: keepPanelsVisible)
         // Settings > General > Show in Dock / Show menu bar icon take effect straight away.
@@ -66,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         RecordingController.shared.onStateChange = { [weak self] in self?.updateStatusIcon() }
         HotkeyManager.shared.onAction = { [weak self] action in self?.perform(action) }
         HotkeyManager.shared.registerAll()
+        ScreenLock.shared.start()
 
         // Launch at login is on by default; this runs once, so turning it off in Settings is respected afterwards.
         if !UserDefaults.standard.bool(forKey: "didSetLaunchAtLoginDefault") {
@@ -311,7 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func prepareSettings() {
         guard settingsWindow == nil else { return }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            contentRect: NSRect(x: 0, y: 0, width: 620, height: 674),
             styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -322,9 +327,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         window.toolbarStyle = .unified
         let hosting = NSHostingController(rootView: SettingsView())
         hosting.sizingOptions = [] // the window keeps its size; the content never resizes it
-        window.contentViewController = hosting
+        // The whole window is one translucent surface (glass on macOS 26 and later); the sidebar and the pane both sit on it.
+        let surface: NSView
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView()
+            glass.style = .regular
+            // A light, warm grey in dark mode (the glass on its own is nearly black); nothing added in light mode.
+            glass.tintColor = NSColor(name: nil) { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(srgbRed: 0.314, green: 0.310, blue: 0.306, alpha: 1) : .clear
+            }
+            glass.contentView = hosting.view
+            surface = glass
+        } else {
+            let effect = NSVisualEffectView()
+            effect.material = .hudWindow
+            effect.blendingMode = .behindWindow
+            effect.state = .active
+            hosting.view.translatesAutoresizingMaskIntoConstraints = false
+            effect.addSubview(hosting.view)
+            NSLayoutConstraint.activate([
+                hosting.view.leadingAnchor.constraint(equalTo: effect.leadingAnchor),
+                hosting.view.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
+                hosting.view.topAnchor.constraint(equalTo: effect.topAnchor),
+                hosting.view.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
+            ])
+            surface = effect
+        }
+        let controller = NSViewController()
+        controller.view = surface
+        controller.addChild(hosting) // keeps the SwiftUI controller alive
+        window.contentViewController = controller
+        window.isOpaque = false
+        window.backgroundColor = .clear
         // With no automatic sizing the hosting view starts empty, so give the window its size explicitly.
-        window.setContentSize(NSSize(width: 800, height: 600))
+        window.setContentSize(NSSize(width: 620, height: 674))
         window.isReleasedWhenClosed = false
         window.isMovableByWindowBackground = true
         window.hidesOnDeactivate = false // a real window: it stays put when you click elsewhere

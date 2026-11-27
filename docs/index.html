@@ -127,6 +127,12 @@
   .sel .box{position:absolute;border:2px solid #fff;border-radius:2px;box-shadow:0 0 0 9999px rgba(12,8,34,.42);display:none}
   .sel .size{position:absolute;left:0;top:100%;margin-top:8px;padding:3px 9px;border-radius:8px;background:rgba(20,14,42,.85);color:#fff;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
   .sel .hint{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 16px);transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:rgba(20,14,42,.85);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none}
+  .sel .modebar{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 16px);transform:translateX(-50%);z-index:2;display:none;gap:4px;padding:5px;border-radius:999px;background:rgba(20,14,42,.86);color:#fff}
+  .sel.rec .modebar{display:flex}
+  .sel.rec .hint{display:none}
+  .modebar button{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;font-size:13px;font-weight:650;color:#fff;cursor:pointer}
+  .modebar button.on{background:rgba(255,255,255,.2)}
+  .modebar kbd{font:700 11px/1.5 var(--mono,monospace);padding:0 6px;border-radius:5px;background:rgba(255,255,255,.18)}
   .winhl{position:absolute;border:3px solid var(--accent);background:rgba(200,255,74,.16);border-radius:1.4cqw;display:none;pointer-events:none}
   .sel[data-mode="window"] .dim{background:rgba(12,8,34,.18)}
 
@@ -134,20 +140,62 @@
   .flash.go{animation:flash .45s ease-out}
   @keyframes flash{0%{opacity:.85}100%{opacity:0}}
 
-  .recbar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:12;display:none;align-items:center;gap:14px;padding:9px 10px 9px 18px;border-radius:999px;
+  /* recording: bar, setup, countdown, outline, webcam, click rings */
+  .recbar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:12;display:none;align-items:center;gap:10px;padding:8px 8px 8px 18px;border-radius:999px;
     background:rgba(24,18,46,.82);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-weight:650;font-size:14px;box-shadow:0 14px 34px -8px rgba(0,0,0,.5)}
   .recording .recbar{display:flex}
-  .recbar .dot{width:10px;height:10px;border-radius:50%;background:#ff453a;animation:pulse 1.1s infinite}
+  .recbar .dot{width:10px;height:10px;border-radius:50%;background:#ff453a;animation:pulse 1.1s infinite;margin-right:2px}
   .recbar time{font-variant-numeric:tabular-nums;min-width:38px}
-  .recbar button{background:#ff453a;color:#fff;border-radius:999px;padding:7px 16px;font-weight:700}
+  .paused .recbar .dot{animation:none;opacity:.45}
+  .rb{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;transition:background .15s}
+  .rb:hover{background:rgba(255,255,255,.28)}
+  .rb.stop{background:#ff453a}.rb.stop:hover{background:#ff6259}
+  .rb svg{width:13px;height:13px}
+  .rb .iplay{display:none}.paused .rb .iplay{display:block}.paused .rb .ipause{display:none}
+  .recoutline{position:absolute;z-index:11;display:none;border:3px solid #ff453a;border-radius:6px;pointer-events:none;box-sizing:border-box}
+  .webcam{position:absolute;left:3%;bottom:8%;z-index:11;display:none;width:clamp(64px,12cqw,150px);aspect-ratio:1;border-radius:50%;overflow:hidden;
+    border:3px solid rgba(255,255,255,.92);box-shadow:0 14px 34px -8px rgba(0,0,0,.55);background:linear-gradient(160deg,#7d70ff,#2a2a7a)}
+  .cam .webcam{display:block}
+  .webcam svg{display:block;width:100%;height:100%}
+  .clickring{position:absolute;z-index:13;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:4px solid #ffd60a;background:rgba(255,214,10,.25);pointer-events:none;animation:cring .55s ease-out forwards}
+  @keyframes cring{from{transform:scale(.5);opacity:1}to{transform:scale(1.15);opacity:0}}
 
-  .chip-cta{white-space:nowrap;position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:8;display:flex;align-items:center;gap:10px;padding:11px 20px 11px 16px;border-radius:999px;
+  .recsetup{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);z-index:14;display:none;flex-direction:column;align-items:center;gap:14px;box-sizing:border-box;
+    width:min(640px,calc(100% - 28px));padding:18px 22px;border-radius:30px;background:rgba(24,18,46,.84);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.14);color:#fff;box-shadow:0 20px 50px -10px rgba(0,0,0,.55)}
+  .settingup .recsetup{display:flex}
+  .recsetup .ttl{font-size:13px;font-weight:650;color:rgba(255,255,255,.62)}
+  .recsetup .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .rchip{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.72);font-size:14px;font-weight:650;transition:background .15s,color .15s}
+  .rchip[hidden]{display:none}
+  .rchip svg{width:16px;height:16px}
+  .rchip[aria-pressed="true"]{background:#fff;color:#241f1d;border-color:#fff}
+  .recsetup[data-fmt="gif"] .vonly{display:none}
+  .recsetup .row2{display:flex;align-items:center;gap:10px;width:100%}
+  .recsetup .sp{flex:1}
+  .seg{display:flex;padding:3px;border-radius:999px;background:rgba(255,255,255,.1)}
+  .seg button{padding:6px 16px;border-radius:999px;font-size:14px;font-weight:700;color:rgba(255,255,255,.75)}
+  .seg button.on{background:rgba(255,255,255,.92);color:#241f1d}
+  .pbtn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:700}
+  .pbtn:hover{background:rgba(255,255,255,.26)}
+  .pbtn.go{background:#ff453a}.pbtn.go:hover{background:#ff6259}
+  .pbtn svg{width:15px;height:15px}
+
+  .count{position:absolute;inset:0;z-index:16;display:none;place-items:center;pointer-events:none}
+  .counting .count{display:grid}
+  .count b{display:grid;place-items:center;width:112px;height:112px;border-radius:50%;background:rgba(24,18,46,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-size:58px;font-weight:800}
+  .count b.pop{animation:cpop .75s ease-out}
+  @keyframes cpop{0%{transform:scale(.6);opacity:0}30%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+
+  .ctas{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:8;display:flex;gap:10px}
+  .chip-cta{white-space:nowrap;display:flex;align-items:center;gap:10px;padding:11px 20px 11px 16px;border-radius:999px;
     background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:#fff;font-weight:700;font-size:15px;
     border:1px solid rgba(255,255,255,.28);transition:background .2s,transform .2s}
-  .chip-cta:hover{background:rgba(255,255,255,.32);transform:translateX(-50%) translateY(-2px)}
+  .chip-cta:hover{background:rgba(255,255,255,.32);transform:translateY(-2px)}
   .chip-cta kbd{font:inherit;opacity:.7}
   .chip-cta svg{width:20px;height:20px}
-  .busy .chip-cta,.recording .chip-cta{display:none}
+  .chip-cta.rec svg{color:#ff6b61}
+  .busy .ctas,.recording .ctas,.settingup .ctas,.counting .ctas{display:none}
 
   .previews{position:absolute;right:16px;bottom:16px;z-index:15;display:flex;flex-direction:column-reverse;gap:12px;align-items:flex-end;pointer-events:none}
   .busy .previews{opacity:0}
@@ -171,12 +219,37 @@
   @keyframes draw{to{stroke-dashoffset:0}}
   .vbadge{position:absolute;left:7px;bottom:7px;padding:2px 8px;border-radius:7px;background:rgba(14,9,34,.7);color:#fff;font-size:11px;font-weight:700;display:flex;gap:5px;align-items:center;font-variant-numeric:tabular-nums}
   .vbadge svg{width:9px;height:9px}
+  .ingroup{display:none !important}
+  .gtile{pointer-events:auto;position:relative;display:none;flex:none;width:150px;height:96px;border-radius:22px;overflow:hidden;background:#1f1f1f;border:1px solid rgba(255,255,255,.28);box-shadow:0 18px 40px -12px rgba(10,5,30,.6);cursor:pointer;padding:0}
+  .gtile.show{display:block}
+  .gtile .pic{position:absolute;inset:0}
+  .gtile .dimx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(0,0,0,.5);color:#fff;font-size:15px;font-weight:650}
+  .gtile svg{width:18px;height:18px;flex:none}
+  .glist{position:absolute;z-index:25;display:none;flex-direction:column;gap:10px;box-sizing:border-box;max-width:calc(100% - 20px);padding:14px;border-radius:24px;background:rgba(24,18,46,.88);
+    -webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);border:1px solid rgba(255,255,255,.14);color:#fff;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}
+  .glist.open{display:flex}
+  .glist .gh{display:flex;align-items:center;gap:6px;height:28px}
+  .glist .gh b{margin-right:auto;font-size:14px;font-weight:650}
+  .glist .gh button{padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;font-weight:700}
+  .glist .gh button:hover{background:rgba(255,255,255,.26)}
+  .glist .rows{display:flex;flex-direction:column;gap:12px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .glist .rows::-webkit-scrollbar{display:none}
+  .grow{display:flex;gap:12px;align-items:flex-start}
+  .gthumb{position:relative;flex:none;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(20,12,44,.55)}
+  .grow .bcol{display:flex;flex-direction:column;gap:8px;width:70px;flex:none}
+  .grow .tx{height:26px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:700}
+  .grow .tx:hover{background:rgba(255,255,255,.28)}
+  .grow .tx.pri{background:#fff;color:#241f1d}.grow .tx.pri:hover{background:var(--accent)}
+  .grow .icons{display:flex;gap:10px}
+  .grow .ic2{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff}
+  .grow .ic2:hover{background:rgba(255,255,255,.26)}
+  .grow .ic2 svg{width:14px;height:14px}
 
   .toast{position:absolute;left:50%;top:calc(clamp(26px,3.3cqw,36px) + 14px);z-index:40;transform:translate(-50%,-8px);padding:9px 18px;border-radius:999px;background:rgba(20,14,42,.88);color:#fff;
     font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap}
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
-  @media(max-width:700px){.stage{aspect-ratio:5/4}.chip-cta{font-size:13.5px;padding:10px 16px 10px 13px;bottom:16px}.chip-cta kbd{display:none}.previews{right:10px;bottom:10px}.recbar{bottom:14px}}
+  @media(max-width:700px){.stage{aspect-ratio:5/4}.ctas{bottom:16px;gap:8px}.chip-cta{font-size:13.5px;padding:10px 14px 10px 12px;gap:8px}.chip-cta kbd,.chip-cta .long,.modebar kbd{display:none}.previews{right:10px;bottom:10px}.recbar{bottom:14px}.recsetup{bottom:14px;padding:14px;gap:12px}}
   .psst{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:22px;padding:0 16px;text-align:center;color:var(--muted);font:600 13px/1.4 var(--mono);letter-spacing:.02em}
   .psst svg{width:16px;height:16px;flex:none}
 
@@ -223,8 +296,11 @@
   details:last-child{border-bottom:1px solid var(--line)}
   summary{cursor:pointer;font-weight:650;font-size:18.5px;letter-spacing:-.015em;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);color:var(--accent);font:500 20px/1 var(--font);transition:transform .3s,background .2s}
-  summary:hover::after{background:rgba(200,255,74,.12)}
+  /* The plus is drawn with two bars (not a text glyph) so it sits exactly in the middle of the circle. */
+  summary::after{content:"";flex:none;box-sizing:border-box;width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);
+    background:linear-gradient(var(--accent),var(--accent)) center/12px 1.6px no-repeat,linear-gradient(var(--accent),var(--accent)) center/1.6px 12px no-repeat;
+    transition:transform .3s,background-color .2s}
+  summary:hover::after{background-color:rgba(200,255,74,.12)}
   details[open] summary::after{transform:rotate(45deg)}
   details p{margin:14px 0 0;color:var(--muted);font-weight:500;line-height:1.6;font-size:16.5px;max-width:40em}
   details p strong{color:var(--ink);font-weight:650}
@@ -262,9 +338,9 @@
   html.intro .menubar{animation:drop2 .7s 1.6s cubic-bezier(.2,.9,.2,1) both}
   html.intro .winA{animation:winIn .9s 1.45s cubic-bezier(.2,.9,.2,1) both}
   html.intro .winB{animation:winIn .9s 1.7s cubic-bezier(.2,.9,.2,1) both}
-  html.intro .chip-cta{animation:chipIn .8s 2.1s cubic-bezier(.2,.9,.2,1) both}
+  html.intro .ctas{animation:chipIn .8s 2.1s cubic-bezier(.2,.9,.2,1) both}
   html.intro .psst{animation:fadeUp .8s 2.3s ease both}
-  .chip-cta{animation:ring 1.8s 3.9s 2 ease-out}
+  .chip-cta:first-child{animation:ring 1.8s 3.9s 2 ease-out}
   html.js .reveal{opacity:0;transform:translateY(32px);transition:opacity .9s var(--d,0s) cubic-bezier(.2,.9,.2,1),transform .9s var(--d,0s) cubic-bezier(.2,.9,.2,1)}
   html.js .reveal.in{opacity:1;transform:none}
 
@@ -274,7 +350,7 @@
 <body>
 
 <header class="nav">
-  <div class="brand"><a class="brand-home" href="./"><img src="icon.png" alt="">Tack</a><a class="ver" href="changelog.html" title="See what changed">v1.0.3</a></div>
+  <div class="brand"><a class="brand-home" href="./"><img src="icon.png" alt="">Tack</a><a class="ver" href="changelog.html" title="See what changed">v1.1.0</a></div>
   <nav class="nav-r">
     <a class="lnk" href="#features">Features</a>
     <a class="lnk" href="#faq">FAQ</a>
@@ -332,16 +408,44 @@
         <div class="winhl" id="winhl"></div>
         <div class="box" id="selBox"><div class="size" id="selSize">0 × 0</div></div>
         <div class="hint" id="selHint">Drag to select an area · Esc to cancel</div>
+        <div class="modebar" id="modebar"><button data-m="area"><kbd>A</kbd>Area</button><button data-m="window"><kbd>W</kbd>Window</button><button data-m="full"><kbd>F</kbd>Fullscreen</button><button data-m="cancel"><kbd>esc</kbd>Cancel</button></div>
       </div>
 
-      <button class="chip-cta" id="chipCta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/></svg>Capture an area <kbd>⇧⌘4</kbd></button>
+      <div class="ctas">
+        <button class="chip-cta" id="chipCta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/></svg>Capture an area <kbd>⇧⌘4</kbd></button>
+        <button class="chip-cta rec" id="chipRec"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg><span>Record<span class="long"> screen</span></span> <kbd>⇧⌘6</kbd></button>
+      </div>
 
-      <div class="recbar" id="recbar"><span class="dot"></span><time id="recTime">0:00</time><button id="recStop">Stop</button></div>
-      <div class="previews" id="previews"></div>
+      <div class="recoutline" id="outline"></div>
+      <div class="webcam" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="40" r="17" fill="#f3d3b8"/><path d="M14 104c2-26 19-37 36-37s34 11 36 37z" fill="#c8ff4a"/></svg></div>
+
+      <div class="recsetup" id="recsetup" data-fmt="mp4" role="dialog" aria-label="Recording options">
+        <div class="ttl" id="setupTitle">Recording</div>
+        <div class="chips">
+          <button class="rchip vonly" data-k="sound"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5v5h4l5 4v-13l-5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Sound</button>
+          <button class="rchip vonly" data-k="mic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Mic</button>
+          <button class="rchip vonly" data-k="cam"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="M17 10.5l4.5-2.5v8L17 13.5z"/></svg>Webcam</button>
+          <button class="rchip" data-k="cursor"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 19.5 12l-6.2 1.5L10 20z"/></svg>Cursor</button>
+          <button class="rchip" data-k="clicks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 9l9 3.5-4 1.3-1.4 4z" fill="currentColor"/><path d="M5.5 5.5l-1-1M4 10H2.5M9 4.2V2.8M13.5 5.5l1-1"/></svg>Clicks</button>
+        </div>
+        <div class="row2">
+          <div class="seg"><button data-f="mp4" class="on">MP4</button><button data-f="gif">GIF</button></div>
+          <span class="sp"></span>
+          <button class="pbtn" id="setupCancel">Cancel</button>
+          <button class="pbtn go" id="setupGo"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>Record</button>
+        </div>
+      </div>
+      <div class="count" aria-hidden="true"><b id="countNum">3</b></div>
+
+      <div class="recbar" id="recbar"><span class="dot"></span><time id="recTime">0:00</time>
+        <button class="rb" id="recPause" aria-label="Pause or resume"><svg class="ipause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><svg class="iplay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5l13 7.5-13 7.5z"/></svg></button>
+        <button class="rb stop" id="recStop" aria-label="Stop recording"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div>
+      <div class="previews" id="previews"><button class="gtile" id="gtile" aria-label="Show grouped previews"><div class="pic" id="gtPic"></div><div class="dimx"><span id="gtIcon"></span><span id="gtLabel"></span></div></button></div>
+      <div class="glist" id="glist" role="dialog" aria-label="Grouped previews"></div>
       <div class="toast" id="toast" role="status"></div>
       <div class="flash" id="flash"></div>
     </div>
-    <div class="psst"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 19.5 12l-6.2 1.5L10 20z"/></svg>Psst… it’s interactive! Try the Tack menu or the button above.</div>
+    <div class="psst"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5 19.5 12l-6.2 1.5L10 20z"/></svg>Psst… it’s interactive! Take a few screenshots, or try a recording.</div>
   </section>
 
 
@@ -354,7 +458,7 @@
       <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14V9a1 1 0 0 1 1-1h5M34 8h5a1 1 0 0 1 1 1v5M40 34v5a1 1 0 0 1-1 1h-5M14 40H9a1 1 0 0 1-1-1v-5"/><path d="M15 18h18M15 24h18M15 30h10"/></svg><h3>Copy text &amp; QR codes</h3><p>Grab words from anything on screen.</p></article>
       <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="6" width="14" height="23" rx="7" fill="currentColor"/><path d="M10 23a14 14 0 0 0 28 0M24 37v6"/></svg><h3>Record with sound &amp; webcam</h3><p>MP4 or GIF, then trim it right away.</p><div class="wave" aria-hidden="true"><i style="--h:30%;--d:0.0s"></i><i style="--h:60%;--d:0.2s"></i><i style="--h:40%;--d:0.4s"></i><i style="--h:85%;--d:0.1s"></i><i style="--h:55%;--d:0.5s"></i><i style="--h:95%;--d:0.3s"></i><i style="--h:45%;--d:0.6s"></i><i style="--h:70%;--d:0.15s"></i><i style="--h:35%;--d:0.45s"></i><i style="--h:80%;--d:0.25s"></i><i style="--h:50%;--d:0.55s"></i><i style="--h:65%;--d:0.05s"></i></div></article>
       <article class="feat "><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="16"/><path d="M24 14v10l7 4"/></svg><h3>Searchable history</h3><p>Find captures by the text inside them.</p></article>
-      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="21" width="32" height="21" rx="5" fill="currentColor"/><path d="M15 21v-6a9 9 0 0 1 18 0v6"/></svg><h3>Private by design</h3><p>No account, no analytics, no tracking. Your captures stay on your Mac.</p><div class="chips"><span>No account</span><span>No analytics</span><span>No tracking</span></div></article>
+      <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="21" width="32" height="21" rx="5" fill="currentColor"/><path d="M15 21v-6a9 9 0 0 1 18 0v6"/></svg><h3>Private by design</h3><p>No account, no analytics, no tracking. Your captures stay on your Mac unless you choose to upload one.</p><div class="chips"><span>No account</span><span>No analytics</span><span>No tracking</span></div></article>
       <article class="feat w2"><svg class="ico" viewBox="0 0 48 48" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M27 4 9 26h12l-3 18 21-24H26z"/></svg><h3>Truly native</h3><p>Light, fast, and made with Swift.</p><div class="chips"><span>Swift</span><span>ScreenCaptureKit</span><span>Apple Silicon + Intel</span></div></article>
     </div>
   </section>
@@ -374,7 +478,7 @@
     <details><summary>macOS warns when I open Tack. Is that normal?</summary><p>Yes. Tack is free and isn’t signed with a paid Apple certificate, so macOS asks you to confirm it once. Open System Settings &gt; Privacy &amp; Security, scroll down and click <strong>Open Anyway</strong>.</p></details>
     <details><summary>How do I allow Screen Recording?</summary><p>In Tack’s Settings &gt; General press <strong>Allow…</strong> next to Screen Recording. In the list that opens, press the <strong>+</strong> button, choose Tack from Applications, turn it on and confirm with your password or Touch ID. Then quit and reopen Tack.</p></details>
     <details><summary>Is Tack really free?</summary><p>Yes. Tack is free and open source, and the code is on <a href="https://github.com/itsssdh/Tack">GitHub</a>.</p></details>
-    <details><summary>Does Tack collect anything?</summary><p>No. There are no accounts and no analytics. The only network use is checking for updates. Your screenshots and recordings stay on your Mac. See the <a href="privacy.html">privacy page</a>.</p></details>
+    <details><summary>Does Tack collect anything?</summary><p>No. There are no accounts and no analytics. Tack uses the network to check for updates and, only if you turn on uploads in Settings and click upload on a preview, to send that one file to the host you chose. Otherwise your screenshots and recordings stay on your Mac. See the <a href="privacy.html">privacy page</a>.</p></details>
     <details><summary>Why does Tack ask for camera and microphone access?</summary><p>Only for the optional webcam bubble and microphone audio in a recording. If you don’t turn them on, Tack doesn’t use them.</p></details>
     <details><summary>What do I need to run Tack?</summary><p>A Mac running macOS 14 (Sonoma) or later, on Apple Silicon or Intel.</p></details>
     <details><summary>How do I get help?</summary><p>Open an issue on <a href="https://github.com/itsssdh/Tack/issues">GitHub</a>.</p></details>
@@ -404,7 +508,7 @@ document.getElementById('discord').addEventListener('click', () => {
         clock = $('clock'), trec = $('trec'), recTime = $('recTime'), recLabel = $('recLabel'), chip = $('chipCta');
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  let mode = null, recording = false, recStart = 0, toastTimer = 0, drag = null;
+  let mode = null, purpose = 'shot', recording = false, counting = false, rec = null, pending = null, toastTimer = 0, drag = null;
 
   /* live clock, and the recording timer */
   const fmt = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -412,7 +516,7 @@ document.getElementById('discord').addEventListener('click', () => {
     const d = new Date();
     clock.textContent = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + '  ' +
                         d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    if (recording) { const t = fmt(Date.now() - recStart); trec.textContent = t; recTime.textContent = t; }
+    if (rec) { const t = fmt(recElapsed()); trec.textContent = t; recTime.textContent = t; }
   }
   tick(); setInterval(tick, 500);
 
@@ -436,20 +540,50 @@ document.getElementById('discord').addEventListener('click', () => {
   chip.addEventListener('click', () => run('area'));
 
   function run(act) {
-    if (act === 'area' || act === 'window') startMode(act);
+    if (act === 'area' || act === 'window') startMode(act, 'shot');
     else if (act === 'full') { shutter(); addCard({ x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight }); }
-    else if (act === 'rec') recording ? stopRecording() : startRecording();
+    else if (act === 'rec') recording ? stopRecording() : startMode('area', 'rec');
   }
+  $('chipRec').addEventListener('click', () => run('rec'));
 
-  /* area and window selection */
-  function startMode(m) {
+  /* area and window selection (for screenshots, and for choosing what to record) */
+  const modebar = $('modebar'), outline = $('outline'), setup = $('recsetup'), gtile = $('gtile'), glist = $('glist');
+  const settingUp = () => stage.classList.contains('settingup');
+  const menubarH = () => document.querySelector('.menubar').offsetHeight;
+
+  function startMode(m, p) {
     if (recording) { toast('Stop the recording first'); return; }
-    mode = m; sel.dataset.mode = m; sel.classList.add('on'); stage.classList.add('busy');
+    if (settingUp() || counting) return;
+    purpose = p; mode = m; sel.dataset.mode = m; sel.classList.toggle('rec', p === 'rec'); sel.classList.add('on'); stage.classList.add('busy');
     box.style.display = 'none'; winhl.style.display = 'none'; selHint.style.display = '';
-    selHint.textContent = m === 'area' ? 'Drag to select an area · Esc to cancel' : 'Click a window to capture it · Esc to cancel';
+    setModeText();
   }
+  function setModeText() {
+    selHint.textContent = mode === 'area' ? 'Drag to select an area · Esc to cancel' : 'Click a window to capture it · Esc to cancel';
+    modebar.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === mode));
+  }
+  function setMode(m) { if (!mode) return; mode = m; sel.dataset.mode = m; drag = null; box.style.display = 'none'; winhl.style.display = 'none'; setModeText(); }
   function endMode() { mode = null; drag = null; sel.classList.remove('on'); stage.classList.remove('busy'); box.style.display = 'none'; winhl.style.display = 'none'; }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (mode) endMode(); closeMenu(); } });
+  function chooseFull() { const r = { x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight }; endMode(); openSetup(r, 'full'); }
+  ['pointerdown', 'pointermove', 'pointerup'].forEach(t => modebar.addEventListener(t, e => e.stopPropagation()));
+  modebar.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.m === 'cancel') endMode(); else if (b.dataset.m === 'full') chooseFull(); else setMode(b.dataset.m);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (mode) endMode();
+      if (settingUp()) closeSetup();
+      if (counting) cancelCountdown();
+      closeMenu(); closeList();
+      return;
+    }
+    if (mode && purpose === 'rec' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (k === 'a') setMode('area'); else if (k === 'w') setMode('window'); else if (k === 'f') chooseFull();
+    }
+    if (settingUp() && e.key === 'Enter') { e.preventDefault(); beginCountdown(); }
+  });
 
   const pt = e => { const r = stage.getBoundingClientRect(); return { x: clamp(e.clientX - r.left, 0, r.width), y: clamp(e.clientY - r.top, 0, r.height) }; };
   sel.addEventListener('pointerdown', e => {
@@ -475,38 +609,120 @@ document.getElementById('discord').addEventListener('click', () => {
       const p = pt(e), x = Math.min(p.x, drag.x), y = Math.min(p.y, drag.y), w = Math.abs(p.x - drag.x), h = Math.abs(p.y - drag.y);
       drag = null; selHint.style.display = '';
       if (w < 14 || h < 14) { box.style.display = 'none'; toast('Drag a bit more to select an area'); return; }
-      endMode(); shutter(); addCard({ x, y, w, h });
+      endMode(); picked({ x, y, w, h }, 'area');
     } else if (mode === 'window') {
       const w = windowAt(pt(e)); if (!w) return;
       const r = stage.getBoundingClientRect(), b = w.getBoundingClientRect();
-      endMode(); shutter(); addCard({ x: b.left - r.left, y: b.top - r.top, w: b.width, h: b.height });
+      endMode(); picked({ x: b.left - r.left, y: b.top - r.top, w: b.width, h: b.height }, 'window');
     }
   });
+  function picked(r, kind) {
+    if (purpose === 'rec') openSetup(r, kind);
+    else { shutter(); addCard(r); }
+  }
   function windowAt(p) {
     const r = stage.getBoundingClientRect(), wins = [...scene.querySelectorAll('.win')].reverse();
     return wins.find(w => { const b = w.getBoundingClientRect(); return p.x + r.left >= b.left && p.x + r.left <= b.right && p.y + r.top >= b.top && p.y + r.top <= b.bottom; });
   }
   function shutter() { flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
 
-  /* recording */
-  function startRecording() { recording = true; recStart = Date.now(); stage.classList.add('recording'); recLabel.textContent = 'Stop Recording'; tick(); toast('Recording… press Stop when you’re done'); }
+  /* recording: setup bar, countdown, then the bar with timer, pause and stop (as in the app) */
+  const REC = { fmt: 'mp4', sound: true, mic: false, cam: false, cursor: true, clicks: true };
+  function syncSetup() {
+    setup.dataset.fmt = REC.fmt;
+    setup.querySelectorAll('.rchip').forEach(c => c.setAttribute('aria-pressed', String(REC[c.dataset.k])));
+    setup.querySelectorAll('[data-f]').forEach(b => b.classList.toggle('on', b.dataset.f === REC.fmt));
+  }
+  function openSetup(r, kind) {
+    pending = { r, kind };
+    $('setupTitle').textContent = kind === 'window' ? 'Recording a window' : kind === 'full' ? 'Recording the whole screen' : 'Recording ' + Math.round(r.w) + ' × ' + Math.round(r.h);
+    setup.querySelector('[data-k="cam"]').hidden = kind === 'window'; // a window recording has no webcam bubble
+    stage.classList.add('settingup'); syncSetup();
+  }
+  function closeSetup() { stage.classList.remove('settingup'); pending = null; }
+  setup.addEventListener('click', e => {
+    const c = e.target.closest('.rchip'); if (c) { REC[c.dataset.k] = !REC[c.dataset.k]; syncSetup(); return; }
+    const f = e.target.closest('[data-f]'); if (f) { REC.fmt = f.dataset.f; syncSetup(); return; }
+    if (e.target.closest('#setupCancel')) closeSetup(); else if (e.target.closest('#setupGo')) beginCountdown();
+  });
+
+  let countTimer = 0;
+  function beginCountdown() {
+    if (!pending) return;
+    const job = pending; stage.classList.remove('settingup'); stage.classList.add('counting'); counting = true;
+    const num = $('countNum'); let n = 3;
+    const step = () => {
+      if (!counting) return;
+      if (n === 0) { counting = false; stage.classList.remove('counting'); startRecording(job); return; }
+      num.textContent = n; num.classList.remove('pop'); void num.offsetWidth; num.classList.add('pop'); n--;
+      countTimer = setTimeout(step, 800);
+    };
+    step();
+  }
+  function cancelCountdown() { counting = false; clearTimeout(countTimer); stage.classList.remove('counting'); pending = null; }
+
+  const recElapsed = () => rec.acc + (rec.seg ? Date.now() - rec.seg : 0);
+  function startRecording(job) {
+    pending = null;
+    rec = { acc: 0, seg: Date.now(), r: job.r, fmt: REC.fmt, clicks: REC.clicks };
+    recording = true; stage.classList.add('recording'); stage.classList.remove('paused'); recLabel.textContent = 'Stop Recording';
+    if (job.kind !== 'full') Object.assign(outline.style, { display: 'block', left: job.r.x + 'px', top: job.r.y + 'px', width: job.r.w + 'px', height: job.r.h + 'px' });
+    stage.classList.toggle('cam', REC.cam && REC.fmt === 'mp4' && job.kind !== 'window');
+    tick();
+  }
   function stopRecording() {
-    const ms = Date.now() - recStart; recording = false; stage.classList.remove('recording'); recLabel.textContent = 'Record Screen…'; tick();
-    addCard({ x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight }, fmt(Math.max(ms, 1000)));
+    if (!rec) return;
+    const ms = recElapsed(), r = rec.r, gif = rec.fmt === 'gif';
+    rec = null; recording = false; outline.style.display = '';
+    stage.classList.remove('recording', 'paused', 'cam'); recLabel.textContent = 'Record Screen…'; tick();
+    addCard(r, fmt(Math.max(ms, 1000)), gif);
   }
   $('recStop').addEventListener('click', stopRecording);
+  $('recPause').addEventListener('click', () => {
+    if (!rec) return;
+    if (rec.seg) { rec.acc += Date.now() - rec.seg; rec.seg = 0; } else rec.seg = Date.now();
+    stage.classList.toggle('paused', !rec.seg); tick();
+  });
+  // With "Clicks" on, a yellow ring marks every click inside the recorded area.
+  stage.addEventListener('pointerdown', e => {
+    if (!rec || !rec.clicks || !rec.seg) return;
+    const p = pt(e), r = rec.r;
+    if (p.x < r.x || p.x > r.x + r.w || p.y < r.y || p.y > r.y + r.h) return;
+    const d = document.createElement('i'); d.className = 'clickring'; d.style.left = p.x + 'px'; d.style.top = p.y + 'px';
+    stage.appendChild(d); setTimeout(() => d.remove(), 650);
+  });
 
-  /* preview cards, like the app's corner previews */
+  /* preview cards, like the app's corner previews. Out of room, older ones fold into one group tile with a list. */
   const ICON = {
     pin: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3h8l-1 6 3.5 3.5H5.5L9 9zM12 13v8"/></svg>',
+    unpin: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3h8l-1 6 3.5 3.5H5.5L9 9zM12 13v8"/><path d="M4 4l16 16" stroke-width="2.4"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5a2.1 2.1 0 0 1 3 3L8 19z"/></svg>',
-    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    stack: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="7" width="14" height="12" rx="2.5"/><path d="M7 4h11a3 3 0 0 1 3 3v8" stroke-linecap="round"/></svg>'
   };
-  function addCard(r, videoLength) {
+  const ANN = '<svg class="ann" viewBox="0 0 100 100" preserveAspectRatio="none"><ellipse pathLength="1" cx="50" cy="50" rx="42" ry="38"/></svg>';
+  const badge = i => !i.len ? '' : i.gif ? '<span class="vbadge">GIF</span>' :
+    '<span class="vbadge"><svg viewBox="0 0 10 10" fill="#fff"><path d="M2 1l7 4-7 4z"/></svg>' + i.len + '</span>';
+
+  const stack = [], GAP = 12;
+  let pinSeq = 0, groupItems = [], wasFolded = false;
+  const groupTitle = list => list.every(i => i.pinned) ? list.length + ' pinned' : list.length + ' screenshots';
+
+  // The region r of the scene, scaled to cover a box (used by the group tile and the list).
+  function coverClip(host, r, bw, bh) {
+    const s = Math.max(bw / r.w, bh / r.h), clip = document.createElement('div'); clip.className = 'clip';
+    clip.style.cssText = 'position:absolute;width:' + r.w + 'px;height:' + r.h + 'px;transform:scale(' + s + ');left:' + (bw - r.w * s) / 2 + 'px;top:' + (bh - r.h * s) / 2 + 'px';
+    const clone = scene.cloneNode(true); clone.removeAttribute('id');
+    clone.style.cssText = 'position:absolute;left:' + (-r.x) + 'px;top:' + (-r.y) + 'px;width:' + stage.clientWidth + 'px;height:' + stage.clientHeight + 'px';
+    clip.appendChild(clone); host.appendChild(clip);
+  }
+  const shake = el => el.animate([0, -6, 6, -4, 4, -2, 2, 0].map(x => ({ transform: 'translateX(' + x + 'px)' })), { duration: 350 });
+
+  function addCard(r, videoLength, isGif) {
     const s = Math.min(240 / r.w, 160 / r.h, 2.5), tw = r.w * s, th = r.h * s, boxW = Math.max(tw, 150), boxH = Math.max(th, 92);
-    const card = document.createElement('div'); card.className = 'card';
-    card.innerHTML = '<div class="thumb"><div class="clip"></div>' +
-      (videoLength ? '<span class="vbadge"><svg viewBox="0 0 10 10" fill="#fff"><path d="M2 1l7 4-7 4z"/></svg>' + videoLength + '</span>' : '') +
+    const item = { r, len: videoLength, gif: !!isGif, pinned: false, pinOrder: 0, annotated: false, grouped: false, anim: null, h: 0 };
+    const card = item.el = document.createElement('div'); card.className = 'card';
+    card.innerHTML = '<div class="thumb"><div class="clip"></div>' + badge(item) +
       '<div class="acts"><button class="ic x" aria-label="Dismiss">' + ICON.x + '</button><button class="ic pin" aria-label="Pin">' + ICON.pin + '</button><button class="ic pen" aria-label="Annotate">' + ICON.pen + '</button>' +
       '<div class="pair"><button class="tx" data-do="copy">Copy</button><button class="tx" data-do="save">Save</button></div></div></div>';
     const thumb = card.querySelector('.thumb'), clip = card.querySelector('.clip');
@@ -520,21 +736,124 @@ document.getElementById('discord').addEventListener('click', () => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.do === 'copy') toast(videoLength ? 'Recording copied' : 'Copied to clipboard');
       else if (b.dataset.do === 'save') toast('Saved to Pictures/Tack');
-      else if (b.classList.contains('pin')) { card.classList.toggle('pinned'); toast(card.classList.contains('pinned') ? 'Pinned to your screen' : 'Unpinned'); }
+      else if (b.classList.contains('pin')) { togglePin(item); toast(item.pinned ? 'Pinned to your screen' : 'Unpinned'); }
       else if (b.classList.contains('pen')) {
-        const on = card.classList.toggle('annotated'), old = thumb.querySelector('.ann'); if (old) old.remove();
-        if (on) thumb.insertAdjacentHTML('beforeend', '<svg class="ann" viewBox="0 0 100 100" preserveAspectRatio="none"><ellipse pathLength="1" cx="50" cy="50" rx="42" ry="38"/></svg>');
-      } else if (b.classList.contains('x')) dismiss(card);
+        item.annotated = card.classList.toggle('annotated'); const old = thumb.querySelector('.ann'); if (old) old.remove();
+        if (item.annotated) thumb.insertAdjacentHTML('beforeend', ANN);
+      } else if (b.classList.contains('x')) item.pinned ? shake(b) : dismiss(item); // a pinned preview cannot be dismissed
     });
+    stack.push(item);
     previews.appendChild(card);
+    item.h = card.offsetHeight;
     card.animate([{ transform: 'translateX(34px) scale(.95)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 340, easing: 'cubic-bezier(.2,.9,.2,1)' });
-    const loose = [...previews.children].filter(c => !c.classList.contains('pinned'));
-    if (loose.length > 3) dismiss(loose[0]);
+    const loose = stack.filter(i => !i.pinned);
+    if (loose.length > 20) dismiss(loose[0]);
+    layoutStack();
   }
-  function dismiss(card) {
-    const a = card.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(30px)' }], { duration: 200 });
-    a.onfinish = () => card.remove();
+  function togglePin(item) {
+    item.pinned = !item.pinned; if (item.pinned) item.pinOrder = ++pinSeq;
+    item.el.classList.toggle('pinned', item.pinned);
+    layoutStack();
   }
+  function dismiss(item) {
+    const i = stack.indexOf(item); if (i < 0) return;
+    stack.splice(i, 1);
+    if (item.grouped) item.el.remove();
+    else item.el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(30px)' }], { duration: 200 }).onfinish = () => item.el.remove();
+    layoutStack();
+  }
+
+  /* Newest unpinned preview sits in the corner and pinned ones stack beyond it. When the stack would run past the top
+     of the screen, everything except the newest screenshot folds into one group tile (like the app). */
+  function layoutStack() {
+    const avail = stage.clientHeight - menubarH() - 32, n = stack.length;
+    const needed = stack.reduce((t, i) => t + i.h, 0) + GAP * Math.max(0, n - 1);
+    const last = stack[n - 1], keep = last && !last.pinned ? last : null;
+    const folded = stack.filter(i => i !== keep), fold = folded.length >= 2 && needed > avail;
+    let o = 0;
+    if (fold) {
+      if (keep) keep.el.style.order = o++;
+      gtile.style.order = o;
+      groupItems = folded.filter(i => i.pinned).sort((a, b) => b.pinOrder - a.pinOrder).concat(folded.filter(i => !i.pinned).reverse());
+    } else {
+      groupItems = [];
+      stack.filter(i => !i.pinned).reverse().concat(stack.filter(i => i.pinned).sort((a, b) => b.pinOrder - a.pinOrder)).forEach(i => { i.el.style.order = o++; });
+    }
+    stack.forEach(i => setGrouped(i, fold && i !== keep));
+    gtile.classList.toggle('show', fold);
+    if (fold) {
+      updateTile();
+      if (!wasFolded) gtile.animate([{ opacity: 0, transform: 'scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2,.9,.2,1)' });
+    }
+    wasFolded = fold;
+    if (glist.classList.contains('open')) fold ? renderList() : closeList();
+  }
+  function setGrouped(item, g) {
+    if (item.grouped === g) return;
+    item.grouped = g;
+    if (item.anim) item.anim.cancel();
+    if (g) {
+      const a = item.anim = item.el.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.92)' }], { duration: 180, fill: 'forwards' });
+      a.onfinish = () => { if (item.grouped) item.el.classList.add('ingroup'); a.cancel(); };
+    } else {
+      item.el.classList.remove('ingroup');
+      item.el.animate([{ opacity: 0, transform: 'scale(.92)' }, { opacity: 1, transform: 'none' }], { duration: 220 });
+    }
+  }
+  function updateTile() {
+    const pic = $('gtPic'); pic.replaceChildren();
+    coverClip(pic, groupItems[0].r, 150, 96);
+    $('gtLabel').textContent = groupTitle(groupItems);
+    $('gtIcon').innerHTML = groupItems.every(i => i.pinned) ? ICON.pin : ICON.stack;
+  }
+
+  /* the list that opens from the group tile */
+  function openList() { glist.classList.add('open'); renderList(); }
+  function closeList() { glist.classList.remove('open'); }
+  function renderList() {
+    const narrow = stage.clientWidth < 560, tw = narrow ? 150 : 250;
+    glist.replaceChildren();
+    const head = document.createElement('div'); head.className = 'gh';
+    head.innerHTML = '<b>' + groupTitle(groupItems) + '</b>' + (groupItems.some(i => i.pinned) ? '<button data-g="unpin">Unpin All</button>' : '') + '<button data-g="del">Delete All</button>';
+    glist.appendChild(head);
+    const rows = document.createElement('div'); rows.className = 'rows';
+    rows.style.maxHeight = Math.max(120, stage.clientHeight - menubarH() - 110) + 'px';
+    groupItems.forEach((item, idx) => {
+      const th = Math.round(Math.min(Math.max(tw * item.r.h / item.r.w, 64), narrow ? 120 : 170));
+      const row = document.createElement('div'); row.className = 'grow'; row.dataset.i = idx;
+      row.innerHTML = '<div class="gthumb"></div><div class="bcol"><button class="tx" data-r="copy">Copy</button><button class="tx pri" data-r="save">Save</button>' +
+        '<div class="icons"><button class="ic2" data-r="pin" aria-label="' + (item.pinned ? 'Unpin' : 'Pin') + '">' + (item.pinned ? ICON.unpin : ICON.pin) + '</button><button class="ic2" data-r="x" aria-label="Dismiss">' + ICON.x + '</button></div></div>';
+      const thumb = row.firstChild; thumb.style.width = tw + 'px'; thumb.style.height = th + 'px';
+      coverClip(thumb, item.r, tw, th);
+      if (item.annotated) thumb.insertAdjacentHTML('beforeend', ANN);
+      thumb.insertAdjacentHTML('beforeend', badge(item));
+      rows.appendChild(row);
+    });
+    glist.appendChild(rows);
+    // Beside the tile, on the side facing the middle of the screen.
+    if (stage.clientWidth < 700) { glist.style.right = '10px'; glist.style.bottom = '10px'; }
+    else {
+      const sr = stage.getBoundingClientRect(), tr = gtile.getBoundingClientRect();
+      glist.style.right = (sr.right - tr.left + 12) + 'px'; glist.style.bottom = '16px';
+    }
+  }
+  gtile.addEventListener('click', () => glist.classList.contains('open') ? closeList() : openList());
+  glist.addEventListener('click', e => {
+    const g = e.target.closest('[data-g]');
+    if (g) {
+      if (g.dataset.g === 'unpin') { stack.forEach(i => { i.pinned = false; i.el.classList.remove('pinned'); }); toast('Unpinned'); layoutStack(); }
+      else { const all = groupItems.slice(); all.forEach(dismiss); toast('Previews discarded'); }
+      return;
+    }
+    const b = e.target.closest('[data-r]'); if (!b) return;
+    const item = groupItems[+b.closest('.grow').dataset.i]; if (!item) return;
+    if (b.dataset.r === 'copy') toast(item.len ? 'Recording copied' : 'Copied to clipboard');
+    else if (b.dataset.r === 'save') toast('Saved to Pictures/Tack');
+    else if (b.dataset.r === 'pin') togglePin(item);
+    else if (item.pinned) shake(b); else dismiss(item);
+  });
+  // A click elsewhere closes the list. (composedPath is read at click time, before a button in the list is rebuilt.)
+  document.addEventListener('click', e => { const p = e.composedPath(); if (!p.includes(glist) && !p.includes(gtile)) closeList(); });
 
 
   /* launch animation ends, then things below the fold fade up as they scroll into view */

@@ -36,6 +36,8 @@ enum SelfTest {
                 await runCapture()
             } else if CommandLine.arguments.contains("--selftest-live") {
                 await runLive()
+            } else if let arg = CommandLine.arguments.first(where: { $0.hasPrefix("--selftest-upload=") }) {
+                await runUploadLive(String(arg.dropFirst("--selftest-upload=".count)))
             } else {
                 await runAll()
             }
@@ -234,6 +236,105 @@ enum SelfTest {
 
         await runVideo()
 
+        // Lock screen: Tack follows macOS's lock and unlock notifications
+        do {
+            let center = DistributedNotificationCenter.default()
+            ScreenLock.shared.start()
+            check("lock: starts unlocked", !ScreenLock.shared.isLocked)
+            center.postNotificationName(Notification.Name("com.apple.screenIsLocked"), object: nil, userInfo: nil, deliverImmediately: true)
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            check("lock: locking is noticed", ScreenLock.shared.isLocked)
+            center.postNotificationName(Notification.Name("com.apple.screenIsUnlocked"), object: nil, userInfo: nil, deliverImmediately: true)
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            check("lock: unlocking is noticed", !ScreenLock.shared.isLocked)
+
+            CaptureService.shared.cancelSelection() // no overlay is open, so this must do nothing
+            check("lock: cancelling with no overlay open is harmless", !RecordingController.shared.isRecording)
+        }
+
+        // Coming back from a full-screen app: Tack's windows are raised again, in their old order
+        do {
+            func window() -> NSWindow {
+                let w = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 200, height: 120), styleMask: [.titled], backing: .buffered, defer: false)
+                w.isReleasedWhenClosed = false
+                return w
+            }
+            let back = window(), front = window()
+            back.orderFront(nil); front.orderFront(nil)
+            SpaceFix.raiseWindowsAfterSpaceChange()
+            try? await Task.sleep(nanoseconds: 1_300_000_000)
+            let order = NSApp.orderedWindows
+            check("space: windows are still showing after a desktop change", back.isVisible && front.isVisible)
+            check("space: their stacking order is kept", (order.firstIndex(of: front) ?? Int.max) < (order.firstIndex(of: back) ?? -1), "\(order.map { $0 === front ? "front" : $0 === back ? "back" : "other" })")
+            check("space: they go back to the normal level afterwards", back.level == .normal && front.level == .normal)
+            // While the desktop settles they are held above other apps' windows.
+            SpaceFix.raiseWindowsAfterSpaceChange()
+            check("space: they are held above other windows right away", back.level == .floating && front.level == .floating)
+            try? await Task.sleep(nanoseconds: 1_400_000_000)
+            check("space: and settle back to normal again", back.level == .normal && front.level == .normal)
+            back.orderOut(nil); front.orderOut(nil)
+        }
+
+        // Uploads: reading the host's answer, building the request body, and staying off by default
+        do {
+            func link(_ json: String, status: Int = 200, key: String = "url") -> Result<String, Error> {
+                Result { try UploadReply.link(from: Data(json.utf8), status: status, linkKey: key).absoluteString }
+            }
+            check("upload: olrite reply gives its link", (try? link(#"{"success":true,"url":"https://olrite.lol/abc123","id":"abc123"}"#).get()) == "https://olrite.lol/abc123")
+            check("upload: link found by a dotted path", (try? link(#"{"data":{"link":"https://x.test/a.png"}}"#, key: "data.link").get()) == "https://x.test/a.png")
+            check("upload: a plain-text reply is taken as the link", (try? link("https://x.test/p\n").get()) == "https://x.test/p")
+            if case .failure(let e) = link(#"{"success":false,"error":"Not allowed here","code":"FORBIDDEN"}"#, status: 403) {
+                check("upload: the host's error message is shown", (e as? UploadError)?.errorDescription == "Not allowed here", "\(e)")
+            } else { check("upload: the host's error message is shown", false) }
+
+            // Too big: said by the host in different ways, each one ends up as "File too large"
+            func tooLarge(_ json: String, status: Int) -> (title: String, text: String)? {
+                if case .failure(let e) = link(json, status: status), let u = e as? UploadError, case .tooLarge = u { return (u.alertTitle, u.errorDescription ?? "") }
+                return nil
+            }
+            let byCode = tooLarge(#"{"success":false,"error":"File too big","code":"TOO_BIG"}"#, status: 413)
+            check("upload: a 413 reply is shown as too large, with the host's words", byCode?.title == "File too large" && byCode?.text.contains("The host says: File too big") == true, "\(String(describing: byCode))")
+            check("upload: a 413 with no body is shown as too large", tooLarge("Payload Too Large", status: 413)?.title == "File too large")
+            check("upload: a size error under another status is still too large", tooLarge(#"{"success":false,"error":"Maximum file size is 100MB","code":"UPLOAD_ERROR"}"#, status: 400)?.title == "File too large")
+            check("upload: an unrelated error is not called too large", tooLarge(#"{"success":false,"error":"Bad key","code":"AUTH"}"#, status: 401) == nil)
+            if case .failure(let e) = link(#"{"success":true}"#) {
+                check("upload: a reply without a link is an error", (e as? UploadError)?.errorDescription == UploadError.noLink.errorDescription)
+            } else { check("upload: a reply without a link is an error", false) }
+            check("upload: a link that is not a web address is refused", (try? link(#"{"url":"javascript:alert(1)"}"#).get()) == nil)
+            check("upload: an error status with no usable body fails", (try? link("oops", status: 500).get()) == nil)
+
+            // The body: field, file name and type, the exact bytes, and the closing boundary
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("fg-upload-\(UUID().uuidString)")
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let source = dir.appendingPathComponent("My \"shot\".png"), body = dir.appendingPathComponent("body")
+            let payload = Data((0..<3000).map { UInt8(truncatingIfNeeded: $0 * 7) } + [13, 10, 45, 45])
+            try? payload.write(to: source)
+            try? Uploader.writeMultipartBody(file: source, field: "file", boundary: "B123", to: body)
+            let made = (try? Data(contentsOf: body)) ?? Data()
+            let head = Data("--B123\r\nContent-Disposition: form-data; name=\"file\"; filename=\"My 'shot'.png\"\r\nContent-Type: image/png\r\n\r\n".utf8)
+            let tail = Data("\r\n--B123--\r\n".utf8)
+            check("upload: body starts with the field, file name and type", made.prefix(head.count) == head)
+            check("upload: body carries the file bytes unchanged", made.dropFirst(head.count).dropLast(tail.count) == payload)
+            check("upload: body ends with the closing boundary", made.suffix(tail.count) == tail)
+
+            let tooBig = UploadTarget(url: URL(string: "https://example.invalid/upload")!, maxBytes: 100)
+            do { _ = try await Uploader.upload(file: source, to: tooBig); check("upload: a file over the host's limit is refused before sending", false) }
+            catch {
+                let u = error as? UploadError
+                var isTooLarge = false
+                if case .tooLarge? = u { isTooLarge = true }
+                check("upload: a file over the host's limit is refused before sending", isTooLarge && u?.alertTitle == "File too large", "\(error)")
+                let text = u?.errorDescription ?? ""
+                let expectedSize = ByteCountFormatter.string(fromByteCount: Int64(payload.count), countStyle: .file)
+                check("upload: the message gives the file's size and the host's limit", text.contains(expectedSize) && text.contains(ByteCountFormatter.string(fromByteCount: 100, countStyle: .file)), text)
+            }
+            try? FileManager.default.removeItem(at: dir)
+
+            let registered = UserDefaults.standard.volatileDomain(forName: UserDefaults.registrationDomain)
+            check("upload: off by default, including the automatic ones",
+                  registered[PrefKey.uploadsEnabled] as? Bool == false && registered[PrefKey.uploadAutoShots] as? Bool == false && registered[PrefKey.uploadAutoRecordings] as? Bool == false)
+        }
+
         // Apple's screenshot shortcuts are written as real booleans (macOS ignores strings)
         do {
             let testDomain = "com.local.framegrab.selftest"
@@ -262,7 +363,7 @@ enum SelfTest {
         if let delegate = NSApp.delegate as? AppDelegate {
             delegate.showSettings()
             let f = delegate.settingsFrame ?? .zero
-            check("settings window has its full size", f.width >= 780 && f.height >= 580, "\(f)")
+            check("settings window has its full size", f.width >= 600 && f.height >= 650, "\(f)")
             NSApp.windows.first { $0.title == "Tack Settings" }?.orderOut(nil)
         }
 
@@ -686,6 +787,30 @@ enum SelfTest {
             check("capture: pipeline", false, error.localizedDescription)
         }
     }
+
+    /// `--selftest-upload=<address>`: uploads a generated picture to that address with a test API key and prints the link.
+    /// Used by hand against a local test server.
+    private static func runUploadLive(_ address: String) async {
+        guard let url = URL(string: address), let data = ImageFormat.png.encode(solid(300, 200, 40, 160, 220), quality: 0.9) else {
+            check("live upload: has an address and a picture", false); return
+        }
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("tack-live-upload.png")
+        try? data.write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        var lastProgress = 0.0
+        let box = ProgressBox()
+        do {
+            let link = try await Uploader.upload(file: file, to: UploadTarget(url: url, apiKey: "test-key-123")) { box.value = $0 }
+            lastProgress = box.value
+            print("link: \(link.absoluteString)")
+            check("live upload: a link came back", true)
+            check("live upload: progress reached 100%", lastProgress == 1, "\(lastProgress)")
+        } catch {
+            check("live upload: a link came back", false, "\(error)")
+        }
+    }
+
+    private final class ProgressBox: @unchecked Sendable { var value = 0.0 }
 
     private static func runLive() async {
         guard CGPreflightScreenCaptureAccess() else {
