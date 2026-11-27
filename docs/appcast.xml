@@ -6,6 +6,15 @@
     <description>Updates for Tack</description>
     <language>en</language>
     <item>
+      <title>Version 1.1.0</title>
+      <pubDate>Fri, 27 Nov 2026 01:56:07 -0000</pubDate>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Upload captures to a link (off by default), a new look for Settings, and fixes for the lock screen and full-screen apps.</p>]]></description>
+      <enclosure url="https://github.com/itsssdh/Tack/releases/download/v1.1.0/Tack.dmg" sparkle:edSignature="d+M4DSgZQ0yHpl+BWkGi5UeMQlY7I/UAGbgNGsQolCzVf3R8WsU+G1fJhu/AkALQsw6zFKXQU6do9mSiAFKuDA==" length="4143665" type="application/octet-stream"/>
+    </item>
+    <item>
       <title>Version 1.0.3</title>
       <pubDate>Thu, 29 Oct 2026 23:42:29 -0000</pubDate>
       <sparkle:version>5</sparkle:version>
