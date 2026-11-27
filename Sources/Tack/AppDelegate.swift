@@ -56,10 +56,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             }
         }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main, using: keepPanelsVisible)
-        // Settings and the other windows come back in front after swiping back from a full-screen app.
-        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { SpaceFix.raiseWindowsAfterSpaceChange() }
-        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main, using: keepPanelsVisible)
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: keepPanelsVisible)
         // Settings > General > Show in Dock / Show menu bar icon take effect straight away.
@@ -364,7 +360,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         window.isReleasedWhenClosed = false
         window.isMovableByWindowBackground = true
         window.hidesOnDeactivate = false // a real window: it stays put when you click elsewhere
-        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary] // opens over a full-screen app instead of switching away from it
+        window.identifier = SpaceFix.normalWindow // an ordinary window: it stays on its own desktop like any app's
         window.delegate = self
         window.center()
         hosting.view.layoutSubtreeIfNeeded()
@@ -380,11 +376,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     func showSettings() {
         prepareSettings()
         // While Settings is open Tack shows in the Dock, like the editors, so the window is easy to get back to.
-        if settingsWindow?.isVisible != true { settingsWindow?.centerOnPointerScreen() }
+        guard let window = settingsWindow else { return }
+        if !window.isVisible { window.centerOnPointerScreen() }
         DockPresence.settingsOpen = true
         DockPresence.refresh()
         NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
+        // Settings opens on a normal desktop. On a desktop that is the one you are on, so nothing switches. From a full-screen app it is
+        // the first desktop, and macOS takes you there, so Settings never sits on top of (or stays attached to) the full-screen app.
+        if !window.isVisible { WindowSpaces.placeOnDesktop(window) }
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

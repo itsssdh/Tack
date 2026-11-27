@@ -252,27 +252,25 @@ enum SelfTest {
             check("lock: cancelling with no overlay open is harmless", !RecordingController.shared.isRecording)
         }
 
-        // Coming back from a full-screen app: Tack's windows are raised again, in their old order
+        // Settings and History are ordinary windows; the other Tack windows (alerts, updater, editors) still follow the active desktop
         do {
-            func window() -> NSWindow {
+            func window(ordinary: Bool) -> NSWindow {
                 let w = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 200, height: 120), styleMask: [.titled], backing: .buffered, defer: false)
                 w.isReleasedWhenClosed = false
+                w.identifier = ordinary ? SpaceFix.normalWindow : nil
                 return w
             }
-            let back = window(), front = window()
-            back.orderFront(nil); front.orderFront(nil)
-            SpaceFix.raiseWindowsAfterSpaceChange()
-            try? await Task.sleep(nanoseconds: 1_300_000_000)
-            let order = NSApp.orderedWindows
-            check("space: windows are still showing after a desktop change", back.isVisible && front.isVisible)
-            check("space: their stacking order is kept", (order.firstIndex(of: front) ?? Int.max) < (order.firstIndex(of: back) ?? -1), "\(order.map { $0 === front ? "front" : $0 === back ? "back" : "other" })")
-            check("space: they go back to the normal level afterwards", back.level == .normal && front.level == .normal)
-            // While the desktop settles they are held above other apps' windows.
-            SpaceFix.raiseWindowsAfterSpaceChange()
-            check("space: they are held above other windows right away", back.level == .floating && front.level == .floating)
-            try? await Task.sleep(nanoseconds: 1_400_000_000)
-            check("space: and settle back to normal again", back.level == .normal && front.level == .normal)
-            back.orderOut(nil); front.orderOut(nil)
+            let ordinary = window(ordinary: true), other = window(ordinary: false)
+            ordinary.orderFront(nil); other.orderFront(nil)
+            check("windows: an ordinary window gets no special desktop handling", ordinary.collectionBehavior.isDisjoint(with: [.moveToActiveSpace, .canJoinAllSpaces, .fullScreenAuxiliary]))
+            check("windows: other Tack windows still follow the active desktop", other.collectionBehavior.contains(.moveToActiveSpace))
+            // Settings is placed on a normal desktop: the call finds the desktops and moves the window, and leaves a window with no
+            // window number (nothing to move) alone.
+            check("windows: a showing window can be placed on a desktop", WindowSpaces.placeOnDesktop(ordinary))
+            ordinary.orderOut(nil); other.orderOut(nil)
+            let unmade = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true)
+            unmade.isReleasedWhenClosed = false
+            check("windows: a window that does not exist yet is left alone", !WindowSpaces.placeOnDesktop(unmade))
         }
 
         // Uploads: reading the host's answer, building the request body, and staying off by default
@@ -364,7 +362,11 @@ enum SelfTest {
             delegate.showSettings()
             let f = delegate.settingsFrame ?? .zero
             check("settings window has its full size", f.width >= 600 && f.height >= 650, "\(f)")
-            NSApp.windows.first { $0.title == "Tack Settings" }?.orderOut(nil)
+            let settings = NSApp.windows.first { $0.title == "Tack Settings" }
+            check("settings window is an ordinary window (no special desktop handling)",
+                  settings?.collectionBehavior.isDisjoint(with: [.moveToActiveSpace, .canJoinAllSpaces, .fullScreenAuxiliary]) == true)
+            check("settings window makes Tack a regular app while it is open", NSApp.activationPolicy() == .regular)
+            settings?.orderOut(nil)
         }
 
         // Every preview size setting leaves room for the corner buttons and the Copy / Save pair

@@ -297,12 +297,19 @@ enum HistoryWindow {
             w.titlebarAppearsTransparent = true
             w.contentViewController = NSHostingController(rootView: HistoryView())
             w.isReleasedWhenClosed = false
-            w.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+            w.identifier = SpaceFix.normalWindow // an ordinary window: it stays on its own desktop like any app's
             w.center()
+            // While History is open Tack is a regular app (Dock icon, app switcher), like with Settings and the editors.
+            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { _ in
+                MainActor.assumeIsolated { DockPresence.historyOpen = false; DockPresence.refresh() }
+            }
             window = w
         }
         if window?.isVisible != true { window?.centerOnPointerScreen() }
+        DockPresence.historyOpen = true
+        DockPresence.refresh()
         NSApp.activate(ignoringOtherApps: true)
+        if let w = window, !w.isVisible { WindowSpaces.placeOnDesktop(w) } // a normal desktop, never attached to a full-screen app
         window?.makeKeyAndOrderFront(nil)
     }
 }

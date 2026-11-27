@@ -8,8 +8,14 @@ import ObjectiveC
 /// otherwise by catching it as it is shown. So every window that can take the keyboard is marked, just before it is ordered
 /// in, to open on whichever desktop is active, full-screen ones included. Windows that already chose (the editors, the
 /// capture overlay) are left alone.
+///
+/// Settings and History are the exception: they are ordinary windows that stay on their own desktop like any other app's, so
+/// they carry `normalWindow` as their identifier and are skipped here.
 @MainActor
 enum SpaceFix {
+    /// Set on a window that should behave like any app's window: no special desktop handling at all.
+    static let normalWindow = NSUserInterfaceItemIdentifier("tack.normal-window")
+
     private static var installed = false
 
     static func install() {
@@ -46,42 +52,9 @@ enum SpaceFix {
     }
 
     static func prepare(_ window: NSWindow) {
-        guard window.canBecomeKey else { return }
+        guard window.canBecomeKey, window.identifier != normalWindow else { return }
         guard window.collectionBehavior.isDisjoint(with: [.canJoinAllSpaces, .moveToActiveSpace]) else { return }
         window.collectionBehavior.insert([.moveToActiveSpace, .fullScreenAuxiliary])
-    }
-
-    /// Tack's windows that are being held in front while the desktop settles, front to back.
-    private static var held: [NSWindow] = []
-    private static var settleWork: DispatchWorkItem?
-
-    /// Swiping back from a full-screen app brings the desktop back, but Tack's own windows (Settings, History, the editors)
-    /// come back behind the other apps' windows, because Tack is no longer the app in front. The app that takes the front
-    /// arrives a moment after the desktop does, so waiting and then raising the windows made them flash away and back.
-    /// Instead they are lifted above everything the moment the desktop changes, held there while the other app settles,
-    /// and then put back to their normal level, still in front and in their old order.
-    static func raiseWindowsAfterSpaceChange() {
-        // orderedWindows runs front to back. Only windows on the desktop that just came up are touched.
-        for window in NSApp.orderedWindows where window.isVisible && window.isOnActiveSpace && window.canBecomeKey
-            && window.level == .normal && window.sheetParent == nil && !window.isMiniaturized {
-            if !held.contains(where: { $0 === window }) { held.append(window) }
-        }
-        held.removeAll { !$0.isVisible }
-        for window in held.reversed() {
-            window.level = .floating
-            if window.isOnActiveSpace { window.orderFrontRegardless() }
-        }
-        settleWork?.cancel()
-        let work = DispatchWorkItem { settleHeldWindows() }
-        settleWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
-    }
-
-    private static func settleHeldWindows() {
-        let windows = held
-        held = []
-        for window in windows.reversed() { window.level = .normal }
-        for window in windows.reversed() where window.isVisible && window.isOnActiveSpace { window.orderFrontRegardless() }
     }
 
     private static func swap(_ type: AnyClass, _ original: Selector, _ replacement: Selector) {
